@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createProvider, normalizeConfig, PROVIDER_ID } from '../index.js';
+import { apply, createProvider, normalizeConfig, PROVIDER_ID } from '../index.js';
 
 const base = {
   controller: 'http://127.0.0.1:9090',
@@ -69,4 +69,44 @@ test('non-http schemes and credentials are refused', async () => {
 test('fetch without url is invalid', async () => {
   const provider = createProvider({ ...base });
   await assert.rejects(provider.fetch({}), /invalid URL/);
+});
+
+test('volatile config refs are unwrapped', () => {
+  const ref = (value) => ({ get: () => value });
+  const provider = createProvider({
+    controller: ref('http://192.168.0.1:9090'),
+    secret: ref('secret'),
+    resolve: ref('auto'),
+    connect: ref('fake'),
+    fakeCidrs: ref('198.18.0.0/15, fdfe:dcba:9876::/48'),
+    lanCidrs: ref('192.168.0.0/16'),
+    cacheTtlMs: ref(60000),
+  });
+  assert.equal(provider.id, 'clash-dns');
+
+  const config = normalizeConfig({ fakeCidrs: ref('198.18.0.0/15') });
+  assert.equal(config.fakeCidrs.length, 1);
+});
+
+test('apply registers the provider and survives live edits', () => {
+  const registered = [];
+  const handlers = {};
+  const ctx = {
+    on: (name, handler) => { handlers[name] = handler; },
+    web: { registerFetchProvider: (provider) => registered.push(provider) },
+  };
+  let fakeCidrs = '198.18.0.0/15';
+  apply(ctx, { fakeCidrs: { get: () => fakeCidrs } });
+
+  assert.equal(registered.length, 1);
+  assert.equal(registered[0].id, 'clash-dns');
+
+  // A bad live edit keeps the last good runtime instead of throwing.
+  fakeCidrs = '';
+  handlers['loader/volatile-update']();
+
+  // A good live edit swaps the runtime.
+  fakeCidrs = '198.18.0.0/15, 198.19.0.0/16';
+  handlers['loader/volatile-update']();
+  assert.equal(registered[0].available(), true);
 });

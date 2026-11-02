@@ -219,8 +219,19 @@ function webError(code, message) {
 /* Config                                                              */
 /* ------------------------------------------------------------------ */
 
+/** Unwrap DSH `Volatile` refs (config fields are live refs under dsh >= 0.1.7). */
+function unwrapConfig(input) {
+  const out = {};
+  for (const [key, value] of Object.entries(input ?? {})) {
+    out[key] = value !== null && typeof value === 'object' && typeof value.get === 'function'
+      ? value.get()
+      : value;
+  }
+  return out;
+}
+
 export function normalizeConfig(input = {}) {
-  const config = { ...DEFAULT_CONFIG, ...(input || {}) };
+  const config = { ...DEFAULT_CONFIG, ...unwrapConfig(input) };
   const fakeCidrs = typeof config.fakeCidrs === 'string'
     ? config.fakeCidrs.split(/[\s,]+/).filter(Boolean)
     : config.fakeCidrs;
@@ -647,6 +658,23 @@ export function createProvider(input) {
 }
 
 export function apply(ctx, config) {
-  const provider = createProvider(config);
+  // Config fields are Volatile refs under dsh >= 0.1.7: unwrap once, then
+  // rebuild on every live edit. A bad edit keeps the last good runtime.
+  const build = () => createProvider(unwrapConfig(config));
+  let runtime = build();
+  const provider = {
+    id: PROVIDER_ID,
+    available: () => true,
+    fetch: (request, signal) => runtime.fetch(request, signal),
+  };
+  if (typeof ctx.on === 'function') {
+    ctx.on('loader/volatile-update', () => {
+      try {
+        runtime = build();
+      } catch {
+        // keep the last good runtime
+      }
+    });
+  }
   ctx.web.registerFetchProvider(provider);
 }

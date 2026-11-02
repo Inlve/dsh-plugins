@@ -107,8 +107,18 @@ dsh plugin --profile <profile> add "github:Inlve/dsh-plugins#path:packages/web-f
 # 方式二：Plugins 页 → Add plugin，填同一条 spec
 ```
 
-然后在 profile 的 `cordis.patch.yml` 里按上面的 YAML 选择 `fetchProvider: clash-dns`，
-**重启 DSH**。
+安装后 **重启 DSH** 即可：bundle 的 patch 会自动把 `web.fetchProvider` 切到 `clash-dns`，
+不需要手写 profile YAML。该覆盖会重写整行配置，`searchProvider` 按默认
+`deepseek-official` 一并写回；之后仍可在 profile patch 或设置里改回其它搜索 provider。
+
+如果已经有自己的 `web` 行配置，可以在 patch 里写回你需要的选择：
+
+```yaml
+- id: web
+  config:
+    searchProvider: <你的搜索 provider>
+    fetchProvider: clash-dns
+```
 
 ## 验证
 
