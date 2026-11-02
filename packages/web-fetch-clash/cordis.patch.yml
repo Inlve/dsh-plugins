@@ -1,14 +1,10 @@
 # dsh-web-fetch-clash bundle layer: one host-plane row that registers the
-# `clash-dns` fetch provider into the shared ctx.web seam.
+# `clash-dns` fetch provider, plus the `web` row override that selects it.
+# Installing the bundle is therefore enough; no profile YAML is required.
 #
-# Selection is explicit. Point the web seam at it from the profile layer
-# (a patch replaces the whole row config, so restate searchProvider):
-#
-#   - id: web
-#     name: '@deepseek-ai/dsh-web'
-#     config:
-#       searchProvider: deepseek-official
-#       fetchProvider: clash-dns
+# The `web` override replaces the whole row config, so searchProvider is
+# restated with the shipped default. A later profile patch or settings save
+# (applied after bundles) can still choose another provider.
 #
 # Provider config (this row's config):
 #   controller:     http://127.0.0.1:9090     Clash external-controller base URL
@@ -22,3 +18,7 @@
 - insert:
     - id: web-fetch-clash
       name: '@inlve/dsh-web-fetch-clash'
+- id: web
+  config:
+    searchProvider: deepseek-official
+    fetchProvider: clash-dns

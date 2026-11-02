@@ -2,6 +2,19 @@
 
 All notable changes to this repository are documented here.
 
+## [0.2.1] - 2026-11-03
+
+### Fixed
+
+- 启用失败 `fakeCidrs must be a non-empty CIDR list`：DSH 0.2 的配置字段是 `Volatile` 引用，
+  宿主现在先 `get()` 解包再校验；否则在线安装后插件行无法激活。
+
+### Added
+
+- bundle patch 现在同时把 `web.fetchProvider` 切到 `clash-dns`，在线安装即可用，不再需要手写
+  profile YAML（覆盖整行配置，`searchProvider` 按默认 `deepseek-official` 一并写回）。
+- 监听 `loader/volatile-update`：Plugins 页保存后立即重建 provider；非法编辑保留上一个可用运行时。
+
 ## [0.2.0] - 2026-11-03
 
 ### Added
