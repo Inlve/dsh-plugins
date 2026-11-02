@@ -110,3 +110,17 @@ test('apply registers the provider and survives live edits', () => {
   handlers['loader/volatile-update']();
   assert.equal(registered[0].available(), true);
 });
+
+test('the secret environment variable wins over the literal field', () => {
+  process.env.DSH_TEST_CLASH_SECRET = 'from-env';
+  try {
+    const config = normalizeConfig({ secretEnv: 'DSH_TEST_CLASH_SECRET', secret: 'literal' });
+    assert.equal(config.secretValue, 'from-env');
+  } finally {
+    delete process.env.DSH_TEST_CLASH_SECRET;
+  }
+
+  assert.equal(normalizeConfig({ secretEnv: 'DSH_TEST_CLASH_SECRET', secret: 'literal' }).secretValue, 'literal');
+  assert.equal(normalizeConfig({ secretEnv: '', secret: 'literal' }).secretValue, 'literal');
+  assert.equal(normalizeConfig({ secretEnv: 'DSH_TEST_CLASH_SECRET' }).secretValue, '');
+});

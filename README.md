@@ -11,7 +11,7 @@ Inlve 的个人 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harne
 
 | 插件 | 作用 | 版本 |
 |---|---|---|
-| [`@inlve/dsh-web-fetch-clash`](packages/web-fetch-clash) | 让 `web_fetch` 在 Clash / Mihomo Fake-IP（TUN）环境下正常工作：识别 fake-IP 占位符，向 Clash 复核真实解析，校验后固定连接；支持局域网白名单、校验缓存与 **Plugins 页可视化配置** | 0.2.1 |
+| [`@inlve/dsh-web-fetch-clash`](packages/web-fetch-clash) | 让 `web_fetch` 在 Clash / Mihomo Fake-IP（TUN）环境下正常工作：识别 fake-IP 占位符，向 Clash 复核真实解析，校验后固定连接；支持局域网白名单、校验缓存与 **Plugins 页可视化配置** | 0.2.2 |
 
 ## 安装
 
