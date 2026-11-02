@@ -2,6 +2,14 @@
 
 All notable changes to this repository are documented here.
 
+## [0.2.2] - 2026-11-03
+
+### Added
+
+- `secretEnv` 配置：优先从环境变量读取 controller 的 Bearer 密钥（默认 `DSH_CLASH_SECRET`），
+  未设置时回退到 `secret` 字段；Plugins 页表单同步新增该字段。
+- README 补充 Windows / macOS / Linux 环境变量差异（大小写、GUI 启动继承、`setx` 生效时机）。
+
 ## [0.2.1] - 2026-11-03
 
 ### Fixed

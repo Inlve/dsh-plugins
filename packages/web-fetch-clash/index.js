@@ -52,6 +52,7 @@ const IPV6_SPECIAL = [
 const DEFAULT_CONFIG = {
   controller: 'http://127.0.0.1:9090',
   secret: '',
+  secretEnv: 'DSH_CLASH_SECRET',
   fakeCidrs: ['198.18.0.0/15', 'fdfe:dcba:9876::/48', '2001:2::/48'],
   lanCidrs: '',
   connect: 'fake',
@@ -72,6 +73,7 @@ const DEFAULT_CONFIG = {
 export const Config = z.object({
   controller: z.string().default(DEFAULT_CONFIG.controller).volatile(),
   secret: z.string().default('').volatile(),
+  secretEnv: z.string().default('DSH_CLASH_SECRET').volatile(),
   resolve: z.string().default('auto').volatile(),
   connect: z.string().default('fake').volatile(),
   fakeCidrs: z.string().default('198.18.0.0/15, fdfe:dcba:9876::/48, 2001:2::/48').volatile(),
@@ -230,6 +232,21 @@ function unwrapConfig(input) {
   return out;
 }
 
+/**
+ * Resolve the Bearer secret: the named environment variable wins, the literal
+ * `secret` field is the fallback. On Windows environment names are
+ * case-insensitive (Node normalizes them); on macOS/Linux they are
+ * case-sensitive, so use the exact name configured here.
+ */
+function resolveSecret(config) {
+  const name = typeof config.secretEnv === 'string' ? config.secretEnv.trim() : '';
+  if (name !== '') {
+    const fromEnv = process.env[name];
+    if (typeof fromEnv === 'string' && fromEnv !== '') return fromEnv;
+  }
+  return typeof config.secret === 'string' ? config.secret : '';
+}
+
 export function normalizeConfig(input = {}) {
   const config = { ...DEFAULT_CONFIG, ...unwrapConfig(input) };
   const fakeCidrs = typeof config.fakeCidrs === 'string'
@@ -272,6 +289,7 @@ export function normalizeConfig(input = {}) {
     }
   }
   config.controllerUrl = controller;
+  config.secretValue = resolveSecret(config);
   return config;
 }
 
@@ -297,7 +315,7 @@ async function queryClashOnce(config, hostname, type, timeoutMs) {
   url.searchParams.set('type', type);
   const mod = url.protocol === 'https:' ? https : http;
   const headers = { accept: 'application/json' };
-  if (config.secret) headers.authorization = `Bearer ${config.secret}`;
+  if (config.secretValue) headers.authorization = `Bearer ${config.secretValue}`;
 
   const response = await new Promise((resolve, reject) => {
     const req = mod.request(url, { method: 'GET', headers, timeout: timeoutMs }, (res) => {

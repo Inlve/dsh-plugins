@@ -54,7 +54,8 @@ Fake-IP 处理**，因此能返回上游真实答案：
 | 字段 | 默认值 | 说明 |
 |---|---|---|
 | `controller` | `http://127.0.0.1:9090` | Clash external-controller 地址 |
-| `secret` | 空 | controller 的 Bearer 密钥 |
+| `secretEnv` | `DSH_CLASH_SECRET` | 优先从该环境变量读取 Bearer 密钥；空字符串 = 不读环境变量 |
+| `secret` | 空 | 环境变量未设置或为空时的回退密钥 |
 | `resolve` | `auto` | `auto` = 系统解析优先；`clash` = 全部问 Clash（不读 Hosts） |
 | `connect` | `fake` | 见上表 |
 | `fakeCidrs` | `198.18.0.0/15, fdfe:dcba:9876::/48, 2001:2::/48` | Fake-IP 池，需与路由器一致 |
@@ -66,6 +67,17 @@ Fake-IP 处理**，因此能返回上游真实答案：
 | `maxBodyChars` | `100000` | 正文字符上限 |
 | `maxRedirects` | `5` | 同源重定向跳数 |
 | `userAgent` | `deepseek-harness/0.0.1 (+https://github.com/deepseek-ai)` | UA |
+
+密钥读取顺序：`secretEnv` 指向的环境变量优先，未设置或为空时回退到 `secret` 字段。
+
+系统差异：
+
+- **Windows**：环境变量名不区分大小写（Node 会归一化）；`setx DSH_CLASH_SECRET "..."` 只对之后的
+  新进程生效，需要重启 DSH。也可以在 `~/.dsh/.env` 里写 `DSH_CLASH_SECRET=...`（DSH 的
+  harness-home 环境层）。
+- **macOS / Linux**：变量名区分大小写；从桌面图标启动的应用通常继承不到 shell 里 `export` 的变量，
+  建议写进 `~/.dsh/.env`，或在启动命令/launchd 单元里注入。
+- 插件只读取 **进程环境**（`process.env`），不会自己去读注册表或 shell 配置文件。
 
 ```yaml
 - insert:
