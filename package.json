@@ -1,13 +1,16 @@
 {
   "name": "dsh-plugins",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Inlve's DeepSeek Harness plugins",
   "license": "MIT",
   "author": "Inlve",
   "packageManager": "pnpm@11.28.5",
   "scripts": {
-    "check": "node --check packages/web-fetch-clash/index.js",
+    "check": "node --check packages/web-fetch-clash/index.js && node --check packages/web-fetch-clash/client.js",
     "test": "node --test --test-isolation=none packages/web-fetch-clash/test/basic.test.mjs"
+  },
+  "devDependencies": {
+    "@deepseek-ai/schemastery": "^3.18.5"
   }
 }

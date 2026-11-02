@@ -85,6 +85,19 @@ Fake-IP 处理**，因此能返回上游真实答案：
     fetchProvider: clash-dns
 ```
 
+## 可视化配置
+
+安装并重启 DSH 后，Plugins 页里本插件行会出现 **Configure**：
+
+- 表单覆盖上表全部字段，secret 以密码框显示；
+- 字段声明为 `.volatile()`，**保存后立即生效，不需要重启**；
+- 保存写入的就是 profile 里的插件行配置（与手写 YAML 等价）；
+- 客户端在提交前做基础校验（数字范围、`http(s)://` 前缀、Fake-IP 池非空），非法输入不会提交。
+
+实现上零第三方依赖：主机端 schema 使用 DSH 自带的 `@deepseek-ai/schemastery`（列在
+`peerDependencies`，由 DSH 的模块解析路由到安装中的副本）；客户端半边是手写的
+`client.js`，只 `require('react')`，没有 npm 依赖、没有构建步骤。
+
 ## 安装
 
 ```bash
