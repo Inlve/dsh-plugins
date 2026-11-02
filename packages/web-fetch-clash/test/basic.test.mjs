@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { apply, createProvider, normalizeConfig, PROVIDER_ID } from '../index.js';
+import { apply, createProvider, createSecretResolver, normalizeConfig, PROVIDER_ID } from '../index.js';
 
 const base = {
   controller: 'http://127.0.0.1:9090',
@@ -123,4 +123,29 @@ test('the secret environment variable wins over the literal field', () => {
   assert.equal(normalizeConfig({ secretEnv: 'DSH_TEST_CLASH_SECRET', secret: 'literal' }).secretValue, 'literal');
   assert.equal(normalizeConfig({ secretEnv: '', secret: 'literal' }).secretValue, 'literal');
   assert.equal(normalizeConfig({ secretEnv: 'DSH_TEST_CLASH_SECRET' }).secretValue, '');
+});
+
+test('the credential service wins over env and literal fallbacks', async () => {
+  const calls = [];
+  const ctx = {
+    credentials: {
+      resolve: async (ref) => {
+        calls.push(ref);
+        return ref === 'DSH_TEST_REF' ? { value: 'from-store', source: 'file' } : undefined;
+      },
+    },
+  };
+
+  const stored = normalizeConfig({ secretRef: 'DSH_TEST_REF', secretEnv: '', secret: 'literal' });
+  assert.equal(await createSecretResolver(ctx, stored)(), 'from-store');
+  assert.deepEqual(calls, ['DSH_TEST_REF']);
+
+  const missing = normalizeConfig({ secretRef: 'DSH_OTHER_REF', secretEnv: '', secret: 'literal' });
+  assert.equal(await createSecretResolver(ctx, missing)(), 'literal');
+
+  const noService = normalizeConfig({ secretRef: 'DSH_TEST_REF', secretEnv: '', secret: 'literal' });
+  assert.equal(await createSecretResolver({}, noService)(), 'literal');
+
+  const throwing = { credentials: { resolve: async () => { throw new Error('boom'); } } };
+  assert.equal(await createSecretResolver(throwing, stored)(), 'literal');
 });
