@@ -1,0 +1,24 @@
+# dsh-web-fetch-clash bundle layer: one host-plane row that registers the
+# `clash-dns` fetch provider into the shared ctx.web seam.
+#
+# Selection is explicit. Point the web seam at it from the profile layer
+# (a patch replaces the whole row config, so restate searchProvider):
+#
+#   - id: web
+#     name: '@deepseek-ai/dsh-web'
+#     config:
+#       searchProvider: deepseek-official
+#       fetchProvider: clash-dns
+#
+# Provider config (this row's config):
+#   controller:     http://127.0.0.1:9090     Clash external-controller base URL
+#   secret:         ''                        Bearer secret for the controller
+#   resolve:        auto | clash              system-first (default) or Clash-only
+#   connect:        fake | real               transport on the Fake-IP or real set
+#   fakeCidrs:      '198.18.0.0/15, ...'      Fake-IP pools to recognise
+#   lanCidrs:       ''                        LAN allowlist (Hosts entries)
+#   cacheTtlMs:     60000                     per-host verification cache
+#   queryTimeoutMs: 4000                      controller query budget
+- insert:
+    - id: web-fetch-clash
+      name: '@inlve/dsh-web-fetch-clash'
