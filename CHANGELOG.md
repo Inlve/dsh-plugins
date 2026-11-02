@@ -2,6 +2,16 @@
 
 All notable changes to this repository are documented here.
 
+## [0.3.0] - 2026-11-03
+
+### Added
+
+- `secretRef` 配置：控制器密钥优先通过 DSH 凭据服务（`ctx.credentials.resolve`）读取，遵循
+  DSH 的存储文件 > 启动环境 > 项目 `.env` > 家目录 `.env` 优先级；凭据服务缺失或引用未配置时
+  回退到 `secretEnv` / `secret`。
+- Plugins 页表单新增「凭据服务引用名」字段；README 说明 `$DSH_HOME/.credentials.yaml` 的写法
+  与“非加密存储、只做 DSH 管理”的安全边界。
+
 ## [0.2.2] - 2026-11-03
 
 ### Added

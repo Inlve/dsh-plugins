@@ -54,8 +54,9 @@ Fake-IP 处理**，因此能返回上游真实答案：
 | 字段 | 默认值 | 说明 |
 |---|---|---|
 | `controller` | `http://127.0.0.1:9090` | Clash external-controller 地址 |
-| `secretEnv` | `DSH_CLASH_SECRET` | 优先从该环境变量读取 Bearer 密钥；空字符串 = 不读环境变量 |
-| `secret` | 空 | 环境变量未设置或为空时的回退密钥 |
+| `secretRef` | `DSH_CLASH_SECRET` | 凭据服务引用名；优先通过 DSH 凭据服务读取 |
+| `secretEnv` | `DSH_CLASH_SECRET` | 凭据服务不可用时的环境变量回退；空 = 不读 |
+| `secret` | 空 | 最后的回退密钥（明文，建议留空） |
 | `resolve` | `auto` | `auto` = 系统解析优先；`clash` = 全部问 Clash（不读 Hosts） |
 | `connect` | `fake` | 见上表 |
 | `fakeCidrs` | `198.18.0.0/15, fdfe:dcba:9876::/48, 2001:2::/48` | Fake-IP 池，需与路由器一致 |
@@ -68,7 +69,22 @@ Fake-IP 处理**，因此能返回上游真实答案：
 | `maxRedirects` | `5` | 同源重定向跳数 |
 | `userAgent` | `deepseek-harness/0.0.1 (+https://github.com/deepseek-ai)` | UA |
 
-密钥读取顺序：`secretEnv` 指向的环境变量优先，未设置或为空时回退到 `secret` 字段。
+密钥读取顺序：
+
+1. `secretRef` 指向的 **DSH 凭据**（`ctx.credentials.resolve`）：存储文件 > 启动环境 > 项目 `.env` > 家目录 `.env`；
+2. 凭据服务不可用或该引用未配置 → `secretEnv` 指向的环境变量；
+3. 仍为空 → `secret` 字段（明文回退）。
+
+写入凭据服务（`$DSH_HOME/.credentials.yaml`，版本化 YAML）：
+
+```yaml
+version: 1
+refs:
+  DSH_CLASH_SECRET: <你的 secret>
+```
+
+该文件由 DSH 管理，`describe` 只报告是否已配置、来源与可写性，不会返回值。注意：**文件本身仍是明文
+YAML**，安全性来自“只由 DSH 读写、不进入 profile 配置、不随插件配置被导出”，不是加密存储。
 
 系统差异：
 

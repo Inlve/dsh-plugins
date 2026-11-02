@@ -53,6 +53,7 @@ const DEFAULT_CONFIG = {
   controller: 'http://127.0.0.1:9090',
   secret: '',
   secretEnv: 'DSH_CLASH_SECRET',
+  secretRef: 'DSH_CLASH_SECRET',
   fakeCidrs: ['198.18.0.0/15', 'fdfe:dcba:9876::/48', '2001:2::/48'],
   lanCidrs: '',
   connect: 'fake',
@@ -74,6 +75,7 @@ export const Config = z.object({
   controller: z.string().default(DEFAULT_CONFIG.controller).volatile(),
   secret: z.string().default('').volatile(),
   secretEnv: z.string().default('DSH_CLASH_SECRET').volatile(),
+  secretRef: z.string().default('DSH_CLASH_SECRET').volatile(),
   resolve: z.string().default('auto').volatile(),
   connect: z.string().default('fake').volatile(),
   fakeCidrs: z.string().default('198.18.0.0/15, fdfe:dcba:9876::/48, 2001:2::/48').volatile(),
@@ -315,7 +317,8 @@ async function queryClashOnce(config, hostname, type, timeoutMs) {
   url.searchParams.set('type', type);
   const mod = url.protocol === 'https:' ? https : http;
   const headers = { accept: 'application/json' };
-  if (config.secretValue) headers.authorization = `Bearer ${config.secretValue}`;
+  const secret = typeof config.resolveSecret === 'function' ? await config.resolveSecret() : config.secretValue;
+  if (secret) headers.authorization = `Bearer ${secret}`;
 
   const response = await new Promise((resolve, reject) => {
     const req = mod.request(url, { method: 'GET', headers, timeout: timeoutMs }, (res) => {
@@ -595,8 +598,48 @@ function requestOnce(url, addresses, config, signal) {
 /* Provider                                                            */
 /* ------------------------------------------------------------------ */
 
-export function createProvider(input) {
+/**
+ * Resolve a controller secret through the DSH credentials seam when it is
+ * available: `ctx.credentials.resolve(ref)` returns `{ value, source }` and
+ * already applies the product's precedence (stored file > launch environment >
+ * project .env > home .env). The literal/env fallback applies when the service
+ * is absent or the reference is not configured.
+ */
+export function createSecretResolver(ctx, plain) {
+  const refName = typeof plain.secretRef === 'string' ? plain.secretRef.trim() : '';
+  const fallback = typeof plain.secretValue === 'string' ? plain.secretValue : '';
+  return async () => {
+    const service = ctx && ctx.credentials;
+    if (refName && service) {
+      const read = typeof service.resolve === 'function'
+        ? service.resolve.bind(service)
+        : typeof service.get === 'function' ? service.get.bind(service) : null;
+      if (read) {
+        try {
+          const found = await read(refName);
+          const value = typeof found === 'string' ? found : found && found.value;
+          if (typeof value === 'string' && value !== '') return value;
+        } catch {
+          // fall through to the configured fallback
+        }
+      }
+    }
+    return fallback;
+  };
+}
+
+export function createProvider(input, options = {}) {
   const config = normalizeConfig(input);
+  const resolveRaw = typeof options.resolveSecret === 'function'
+    ? options.resolveSecret
+    : async () => config.secretValue;
+  let secretCache = { value: undefined, at: 0 };
+  config.resolveSecret = async () => {
+    if (Date.now() - secretCache.at < 5000) return secretCache.value;
+    const value = await resolveRaw();
+    secretCache = { value, at: Date.now() };
+    return value;
+  };
   const verificationCache = new Map();
 
   async function fetchImpl(request, signal) {
@@ -678,7 +721,10 @@ export function createProvider(input) {
 export function apply(ctx, config) {
   // Config fields are Volatile refs under dsh >= 0.1.7: unwrap once, then
   // rebuild on every live edit. A bad edit keeps the last good runtime.
-  const build = () => createProvider(unwrapConfig(config));
+  const build = () => {
+    const plain = normalizeConfig(unwrapConfig(config));
+    return createProvider(config, { resolveSecret: createSecretResolver(ctx, plain) });
+  };
   let runtime = build();
   const provider = {
     id: PROVIDER_ID,
