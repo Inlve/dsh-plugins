@@ -2,6 +2,14 @@
 
 All notable changes to this repository are documented here.
 
+## [0.3.1] - 2026-11-03
+
+### Fixed
+
+- `web_fetch` 报 `cannot get property "credentials" without inject`：插件未声明 credentials 注入，
+  Cordis 的服务代理拒绝了直接访问。改为先走无守卫的 `ctx.get('credentials')`，服务缺失或访问
+  被拒绝时安静回退到环境变量/字面密钥，不再让抓取失败。
+
 ## [0.3.0] - 2026-11-03
 
 ### Added

@@ -1,6 +1,6 @@
 {
   "name": "@inlve/dsh-web-fetch-clash",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Fake-IP aware web.fetch provider for DeepSeek Harness: asks Clash for the truthful resolution, validates it, and pins the connection",
   "license": "MIT",
   "author": "Inlve",

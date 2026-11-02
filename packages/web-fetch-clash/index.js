@@ -605,11 +605,30 @@ function requestOnce(url, addresses, config, signal) {
  * project .env > home .env). The literal/env fallback applies when the service
  * is absent or the reference is not configured.
  */
+/**
+ * Read the credentials service without tripping Cordis's inject guard:
+ * `ctx.credentials` throws unless the plugin declared an inject, so the
+ * unguarded `ctx.get('credentials')` path comes first, and a missing service
+ * is simply undefined.
+ */
+function credentialService(ctx) {
+  if (!ctx) return undefined;
+  try {
+    if (typeof ctx.get === 'function') {
+      const viaGet = ctx.get('credentials');
+      if (viaGet !== undefined) return viaGet;
+    }
+    return ctx.credentials;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createSecretResolver(ctx, plain) {
   const refName = typeof plain.secretRef === 'string' ? plain.secretRef.trim() : '';
   const fallback = typeof plain.secretValue === 'string' ? plain.secretValue : '';
   return async () => {
-    const service = ctx && ctx.credentials;
+    const service = credentialService(ctx);
     if (refName && service) {
       const read = typeof service.resolve === 'function'
         ? service.resolve.bind(service)

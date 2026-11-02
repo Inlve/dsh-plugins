@@ -149,3 +149,27 @@ test('the credential service wins over env and literal fallbacks', async () => {
   const throwing = { credentials: { resolve: async () => { throw new Error('boom'); } } };
   assert.equal(await createSecretResolver(throwing, stored)(), 'literal');
 });
+
+test('credential access survives the cordis inject guard', async () => {
+  const config = normalizeConfig({ secretRef: 'X', secretEnv: '', secret: 'literal' });
+  const message = 'cannot get property "credentials" without inject';
+  const guarded = {
+    get() {
+      throw new Error(message);
+    },
+    get credentials() {
+      throw new Error(message);
+    },
+  };
+  assert.equal(await createSecretResolver(guarded, config)(), 'literal');
+
+  const viaGet = {
+    get: (name) => (name === 'credentials'
+      ? { resolve: async () => ({ value: 'via-get', source: 'file' }) }
+      : undefined),
+  };
+  assert.equal(await createSecretResolver(viaGet, config)(), 'via-get');
+
+  const unguarded = { get: () => undefined };
+  assert.equal(await createSecretResolver(unguarded, config)(), 'literal');
+});
