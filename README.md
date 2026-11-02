@@ -11,7 +11,7 @@ Inlve 的个人 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harne
 
 | 插件 | 作用 | 版本 |
 |---|---|---|
-| [`@inlve/dsh-web-fetch-clash`](packages/web-fetch-clash) | 让 `web_fetch` 在 Clash / Mihomo Fake-IP（TUN）环境下正常工作：识别 fake-IP 占位符，向 Clash 复核真实解析，校验后固定连接；支持局域网白名单与校验缓存 | 0.1.0 |
+| [`@inlve/dsh-web-fetch-clash`](packages/web-fetch-clash) | 让 `web_fetch` 在 Clash / Mihomo Fake-IP（TUN）环境下正常工作：识别 fake-IP 占位符，向 Clash 复核真实解析，校验后固定连接；支持局域网白名单、校验缓存与 **Plugins 页可视化配置** | 0.2.0 |
 
 ## 安装
 
@@ -38,6 +38,7 @@ dsh plugin --profile <profile> add link:/absolute/path/to/dsh-plugins/packages/w
 ├── packages/
 │   └── web-fetch-clash/          # @inlve/dsh-web-fetch-clash
 │       ├── index.js              # 宿主半边（零构建，纯 JS）
+│       ├── client.js             # 客户端半边（Plugins 页可视化配置）
 │       ├── cordis.patch.yml      # 插入插件行
 │       ├── package.json
 │       └── test/                 # node:test 单元测试
@@ -48,9 +49,9 @@ dsh plugin --profile <profile> add link:/absolute/path/to/dsh-plugins/packages/w
 
 ## 开发
 
-- 纯 JavaScript、零构建：没有 `src/`、没有编译步骤，`index.js` 直接运行。
-- 不引入第三方运行时依赖；对 DSH 自带包的引用只出现在 `peerDependencies`（由 DSH 的模块解析路由到安装中的副本）。
-- 每个插件导出 `Config` 的字段尽量声明为 volatile 之外的普通字段；配置变更需要重启时在 README 写清楚。
+- 纯 JavaScript、零构建：没有 `src/`、没有编译步骤，`index.js` / `client.js` 直接运行。
+- 不引入第三方运行时依赖；对 DSH 自带包的引用只出现在 `peerDependencies`（由 DSH 的模块解析路由到安装中的副本）。配置 schema 使用 `@deepseek-ai/schemastery`，客户端半边只 `require('react')`。
+- 配置字段声明为 `.volatile()`，Plugins 页保存后立即生效，无需重启。
 
 ```bash
 pnpm install          # 仅用于 workspace 链接，不需要安装运行时依赖
@@ -61,7 +62,7 @@ pnpm check            # node --check
 ## 发布
 
 ```bash
-git tag v0.1.0
+git tag v0.2.0
 git push origin main --tags
 ```
 

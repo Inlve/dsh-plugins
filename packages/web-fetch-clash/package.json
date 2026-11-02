@@ -1,6 +1,6 @@
 {
   "name": "@inlve/dsh-web-fetch-clash",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Fake-IP aware web.fetch provider for DeepSeek Harness: asks Clash for the truthful resolution, validates it, and pins the connection",
   "license": "MIT",
   "author": "Inlve",
@@ -22,10 +22,12 @@
   "main": "index.js",
   "exports": {
     ".": "./index.js",
+    "./client": "./client.js",
     "./package.json": "./package.json"
   },
   "files": [
     "index.js",
+    "client.js",
     "cordis.patch.yml",
     "README.md"
   ],
@@ -33,12 +35,18 @@
     "dsh": ">=0.2.0"
   },
   "scripts": {
-    "check": "node --check index.js",
+    "check": "node --check index.js && node --check client.js",
     "test": "node --test test/basic.test.mjs"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/schemastery": "^3.18.5"
   },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
     }
   }
 }

@@ -2,6 +2,15 @@
 
 All notable changes to this repository are documented here.
 
+## [0.2.0] - 2026-11-03
+
+### Added
+
+- `@inlve/dsh-web-fetch-clash` 0.2.0
+  - 可视化配置：Plugins 页本插件行的 Configure 页面，覆盖 controller / secret / resolve / connect / fakeCidrs / lanCidrs / cacheTtlMs 及各项上限
+  - 配置 schema 使用 DSH 自带的 `@deepseek-ai/schemastery`（peer），字段 `.volatile()`，保存后立即生效
+  - 手写 `client.js`（仅 `require('react')`，零构建、零第三方依赖）
+
 ## [0.1.0] - 2026-11-03
 
 ### Added

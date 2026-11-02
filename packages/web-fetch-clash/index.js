@@ -13,12 +13,15 @@
 // domain mapping and routing rules keep working, or pin to the verified real
 // addresses (`connect: real`).
 //
-// No third-party runtime dependencies: node:http(s), node:dns, node:net only.
+// Runtime dependencies: node:http(s), node:dns, node:net only. The config
+// schema uses @deepseek-ai/schemastery, a package DSH itself provides (peer,
+// not a third-party runtime dependency).
 
 import http from 'node:http';
 import https from 'node:https';
 import dns from 'node:dns';
 import net from 'node:net';
+import z from '@deepseek-ai/schemastery';
 
 /** Cordis plugin name used by loader diagnostics. */
 export const name = 'dsh-web-fetch-clash';
@@ -61,6 +64,26 @@ const DEFAULT_CONFIG = {
   maxRedirects: 5,
   userAgent: DEFAULT_USER_AGENT,
 };
+
+/**
+ * Host configuration schema. Fields are volatile so the Plugins page can edit
+ * them live: the loader swaps the provider fiber without an app restart.
+ */
+export const Config = z.object({
+  controller: z.string().default(DEFAULT_CONFIG.controller).volatile(),
+  secret: z.string().default('').volatile(),
+  resolve: z.string().default('auto').volatile(),
+  connect: z.string().default('fake').volatile(),
+  fakeCidrs: z.string().default('198.18.0.0/15, fdfe:dcba:9876::/48, 2001:2::/48').volatile(),
+  lanCidrs: z.string().default('').volatile(),
+  cacheTtlMs: z.number().default(60000).volatile(),
+  queryTimeoutMs: z.number().default(4000).volatile(),
+  timeoutMs: z.number().default(30000).volatile(),
+  maxResponseBytes: z.number().default(5000000).volatile(),
+  maxBodyChars: z.number().default(100000).volatile(),
+  maxRedirects: z.number().default(5).volatile(),
+  userAgent: z.string().default(DEFAULT_USER_AGENT).volatile(),
+});
 
 /* ------------------------------------------------------------------ */
 /* IP parsing and classification                                       */
