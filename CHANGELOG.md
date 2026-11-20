@@ -4,6 +4,15 @@ All notable changes to this repository are documented here.
 
 ## Unreleased
 
+### Deprecated
+
+- 弃用 `@inlve/dsh-web-fetch-clash`（最后版本 0.3.1）。官方 HTTP 抓取器在从 DSH
+  `v0.2.1-rc.2` 升级到后续版本的变更中已支持 Fake-IP TUN，无需此兼容插件。
+  仓库入口移至“已弃用”，安装示例改用 MCP 面板；插件说明新增版本依据、卸载迁移及残留
+  `clash-dns`／搜索配置清理说明。源码保留供历史追溯。
+- 2026-11-20，在 DSH `0.2.2-rc.5` 环境、用户已卸载插件后，当前 `web_fetch` 请求
+  `https://github.com/` 返回 HTTP 200，并正确读取 GitHub 首页正文。
+
 ### Fixed
 
 - MCP 面板恢复从 store 读取 `staticRows`；修复表单重构遗漏变量声明导致打开页面时抛出

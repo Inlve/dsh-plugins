@@ -1,4 +1,26 @@
-# @inlve/dsh-web-fetch-clash
+# @inlve/dsh-web-fetch-clash（已弃用）
+
+> **Deprecated / 已弃用（2026-11-20）**：官方 HTTP 抓取器已支持 Fake-IP TUN，本插件不再需要，不再推荐安装或继续维护。最后版本为 0.3.1；源码与旧说明仅供历史追溯。
+
+## 弃用原因与版本依据
+
+官方迁移指南 [`web_fetch` 可以访问私有目标](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/upgrade-guide/v0.2.1-rc.2/web-fetch-private-destinations/guide.zh.md) 说明：HTTP 抓取器不再拒绝 loopback、私网、link-local 或保留地址，改用已安装的代理策略和系统解析器；Fake-IP DNS 的 TUN 模式代理无需此插件即可工作。
+
+**版本目录 `v0.2.1-rc.2` 表示从该版本升级到后续版本时的变更，不表示 rc.2 本身已经包含变更。** 本次已在 DSH `0.2.2-rc.5` 环境验证：用户卸载插件后，直接调用 `web_fetch` 访问 `https://github.com/` 返回 HTTP 200，并正确读取首页正文（2026-11-20）。这验证了当前环境的网页抓取，不代表 Git SSH、推送或所有站点都已测试。
+
+## 迁移到官方 HTTP 抓取器
+
+1. 使用已包含上述变更的 DSH 版本；旧版用户先升级。
+2. 在插件管理页卸载本插件。若已卸载，无需重复操作。
+3. 在网页抓取设置中选用官方 HTTP 提供方（provider id：`http`）。如果曾手动配置 `web.fetchProvider: clash-dns`，清理该残留选择，避免引用已卸载的提供方。用户手写的插件插入行也需移除。
+4. 检查 `web.searchProvider`：旧 bundle 曾附带固定 `deepseek-official` 的覆盖。如该值只是为本插件添加，应恢复原有搜索选择或宿主默认；不要覆盖自己有意设置的搜索提供方，也不要整段删除其他 `web` 配置。
+5. 再用 `web_fetch` 访问 GitHub 验证。仅为本插件设置的控制器密钥引用和环境变量，确认无其他使用方后可自行清理；不需要更改 Clash/Mihomo 的 TUN 或 Fake-IP 配置。
+
+官方 HTTP 抓取器允许访问私有目标，迁移不会保留本插件旧有的地址类别限制。如部署仍要求阻止私网访问，应单独配置网络访问或工具策略；不要把已弃用插件当作受维护的安全边界。
+
+## 历史说明（不再作为当前安装建议）
+
+以下内容描述插件原有实现及旧版 DSH 背景，保留用于理解历史配置；请优先采用上面的迁移步骤。
 
 让 DeepSeek Harness 的 `web_fetch` 在 **Clash / Mihomo 的 Fake-IP（TUN）环境**下正常工作：
 识别 Fake-IP 占位符，向 Clash 复核真实解析，校验通过后再固定连接。
@@ -10,7 +32,7 @@
 
 ## 背景
 
-DSH 的 `web_fetch` 在建立连接前要求域名解析结果是**公共单播地址**，否则拒绝：
+旧版 DSH 的官方 HTTP 抓取器在建立连接前要求域名解析结果是**公共单播地址**，否则拒绝（当前版本已改变此行为）：
 
 ```
 URL hostname "api.github.com" resolves to a non-public IP address
@@ -126,7 +148,7 @@ YAML**，安全性来自“只由 DSH 读写、不进入 profile 配置、不随
 `peerDependencies`，由 DSH 的模块解析路由到安装中的副本）；客户端半边是手写的
 `client.js`，只 `require('react')`，没有 npm 依赖、没有构建步骤。
 
-## 安装
+## 历史安装方法（已弃用，请勿用于新安装）
 
 ```bash
 # 方式一：DSH CLI
