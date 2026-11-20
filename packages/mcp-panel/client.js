@@ -1167,7 +1167,7 @@ window.__ModuleLoader__.load({
 
           message && message.scope !== 'form' ? h('p', { className: `mc-msg ${message.kind}`, key: 'msg' }, message.text) : null,
           loadError ? h('p', { className: 'mc-msg error', key: 'loaderr' }, loadError) : null,
-          !store.flags.manager && store.errors.manager
+          !store.flags.manager
             ? h('p', { className: 'mc-msg error', key: 'mgrerr' }, t('noManagerApi'))
             : null,
           store.errors.managerStream
@@ -1345,7 +1345,6 @@ window.__ModuleLoader__.load({
         ctx.inject(['remote', 'remote.pluginInventory'], child => {
           child.effect(() => {
             store.api.inventory = child.remote.pluginInventory
-            store.flags.inventory = true
             store.bump()
             void (async () => {
               try {
@@ -1353,9 +1352,11 @@ window.__ModuleLoader__.load({
                 const snapshot = isObject(result) && 'ok' in result ? (result.ok ? result.value : null) : result
                 const entries = Array.isArray(snapshot?.entries) ? snapshot.entries : []
                 store.staticRows = entries.filter(entry => String(entry?.moduleName ?? '').startsWith(MCP_MODULE))
-                store.bump()
+                store.errors.inventory = snapshot === null ? 'inventory read failed' : null
               } catch (error) {
                 store.errors.inventory = String(error?.message ?? error)
+              } finally {
+                store.flags.inventory = true
                 store.bump()
               }
             })()
