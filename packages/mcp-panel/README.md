@@ -21,7 +21,7 @@ failure reason. Clicking the dot probes that server again.
 | Click the dot | Runs a one-shot probe (connect, list tools, close) on the host and keeps the result until the live state changes. |
 | 重启 | Rebuilds that server's instance and resets its reconnect budget. |
 | 编辑 / 停用 / 删除 | Writes the entry through the Settings Remote; the host reconciles at once, with no restart. |
-| 添加服务器 | Name (also the tool namespace), STDIO vs Streamable HTTP, command/args/env/cwd or URL/headers, startup timeout, enabled. |
+| 添加服务器 / 编辑 | Opens a full-page form: grouped cards, `类型` as a right-aligned segmented control, one input row per argument, and key/value rows with a delete icon plus a full-width **添加** button for arguments, environment variables and headers. A third card holds the advanced fields (startup timeout, tool call timeout, reconnect, `credential` templates, enabled). **保存** sits at the bottom right. |
 | Search | Filters by name, command line, or URL once more than three servers exist. |
 | 配置行与插件提供的服务器 | Read-only section: static `dsh-mcp-client` rows report a Loader phase (loaded / loading / failed with its diagnostic), not connectivity. |
 

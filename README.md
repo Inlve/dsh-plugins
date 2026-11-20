@@ -14,7 +14,7 @@ Inlve 的个人 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harne
 | [`@inlve/dsh-web-fetch-clash`](packages/web-fetch-clash) | 让 `web_fetch` 在 Clash / Mihomo Fake-IP（TUN）环境下正常工作：识别 fake-IP 占位符，向 Clash 复核真实解析，校验后固定连接；支持局域网白名单、校验缓存、**Plugins 页可视化配置**与凭据服务 | 0.3.1 |
 | [`@inlve/dsh-sandbox-guard`](packages/sandbox-guard) | 沙箱治理：① Windows 工作区权限前置检查 + **授权覆盖修复**（已存在的子目录补 ACE 与 Low 标签，可回滚）；② **信任目录**——把缓存等公共目录纳入沙箱可写范围（按工作区授权，硬禁止盘根/PATH/系统目录，风险项需二次确认）；③ 可配置的**提权策略**——预先认可的越界操作不再逐次打扰，每次放行记录 Agent 给出的理由 | 1.1.0 |
 | [`@inlve/dsh-toolchain-env`](packages/toolchain-env) | 类 IDEA 的工具链设置：自动扫描 fnm/pnpm/pyenv/Volta/mise/winget… 等管理器，左侧栏面板里勾选、覆盖路径并保存即生效；把选中目录追加进 DSH 子进程的 PATH（受管 shell、终端、MCP、子 agent 共享），只追加不覆盖、退出即还原、每次变更留审计 | 0.2.0 |
-| [`@inlve/dsh-mcp-panel`](packages/mcp-panel) | 左侧栏 MCP 服务器面板：列出 mcp-manager 的服务器与配置文件/插件提供的服务器，可添加、修改、停用、删除；绿/红状态点显示连接结果并在失败时给出简短原因，点状态点即重新检测，还能重启卡住的实例 | 0.1.0 |
+| [`@inlve/dsh-mcp-panel`](packages/mcp-panel) | 左侧栏 MCP 服务器面板：列出 mcp-manager 的服务器与配置文件/插件提供的服务器，可添加、修改、停用、删除；绿/红状态点显示连接结果并在失败时给出简短原因，点状态点即重新检测，还能重启卡住的实例；添加/编辑是独立整页表单（分组卡片、参数/环境变量/请求头逐行增删） | 0.2.0 |
 
 ## 安装
 

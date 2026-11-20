@@ -1,6 +1,6 @@
 {
   "name": "@inlve/dsh-mcp-panel",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Visual MCP server manager for DSH: add, edit and delete servers, see a green/red connection dot with the failure reason, and click the dot to probe again",
   "license": "MIT",
   "author": "Inlve",

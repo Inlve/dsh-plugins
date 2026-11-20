@@ -60,6 +60,8 @@ window.__ModuleLoader__.load({
         saving: '保存中…',
         formAdd: '添加 MCP 服务器',
         formEdit: '编辑 {{name}}',
+        editorSubtitle: '按 DSH 的 MCP 配置填写；保存后 Host 立即应用，不需要重启。',
+        readonlyPill: '只读',
         name: '名称',
         nameHint: '工具命名空间：字母、数字、下划线、短横线，最长 32 位',
         transport: '类型',
@@ -71,8 +73,23 @@ window.__ModuleLoader__.load({
         cwd: '工作目录（可选）',
         url: 'URL',
         headers: '请求头（每行一个 Name: value）',
-        startup: '启动超时（毫秒，留空 = 30000）',
+        startup: '启动超时（毫秒，留空用默认 30000）',
         pluginFields: '启用后立即连接',
+        advanced: '高级',
+        toolTimeout: '工具调用超时（毫秒，留空用默认）',
+        reconnect: '断线后自动重连',
+        templates: '展开 ${credential:…} 模板',
+        addArg: '添加参数',
+        addEnv: '添加环境变量',
+        addHeader: '添加请求头',
+        keyPlaceholder: '键',
+        valuePlaceholder: '值',
+        argPlaceholder: '参数',
+        removeRow: '删除这一行',
+        pairNoKey: '{{what}} 里这些行没有键：{{lines}}',
+        toolTimeoutInvalid: '工具调用超时必须是一个正整数毫秒数，或者留空。',
+        managedPill: '面板',
+        staticPill: '配置行',
         saveOk: '已保存，Host 已开始应用',
         saveFailed: '保存失败',
         deleteOk: '已删除',
@@ -158,6 +175,8 @@ window.__ModuleLoader__.load({
         saving: 'Saving...',
         formAdd: 'Add MCP server',
         formEdit: 'Edit {{name}}',
+        editorSubtitle: 'Fill in the DSH MCP configuration; the Host applies it as soon as you save.',
+        readonlyPill: 'read-only',
         name: 'Name',
         nameHint: 'Tool namespace: letters, digits, underscore and dash, up to 32 characters',
         transport: 'Transport',
@@ -169,8 +188,23 @@ window.__ModuleLoader__.load({
         cwd: 'Working directory (optional)',
         url: 'URL',
         headers: 'Headers (Name: value per line)',
-        startup: 'Startup timeout (ms, empty = 30000)',
+        startup: 'Startup timeout (ms, empty uses the 30000 default)',
         pluginFields: 'Connect as soon as saving',
+        advanced: 'Advanced',
+        toolTimeout: 'Tool call timeout (ms, empty uses the default)',
+        reconnect: 'Reconnect after a lost connection',
+        templates: 'Expand ${credential:…} templates',
+        addArg: 'Add argument',
+        addEnv: 'Add environment variable',
+        addHeader: 'Add header',
+        keyPlaceholder: 'Key',
+        valuePlaceholder: 'Value',
+        argPlaceholder: 'Argument',
+        removeRow: 'Remove this row',
+        pairNoKey: 'These {{what}} rows have no key: {{lines}}',
+        toolTimeoutInvalid: 'The tool call timeout must be a positive whole number of milliseconds, or empty.',
+        managedPill: 'panel',
+        staticPill: 'config row',
         saveOk: 'Saved; the Host is applying it',
         saveFailed: 'Save failed',
         deleteOk: 'Deleted',
@@ -226,39 +260,39 @@ window.__ModuleLoader__.load({
     }
 
     const CSS = `
-.mc-page { box-sizing: border-box; height: 100%; overflow-y: auto; padding: 24px 32px 56px; background: var(--dsw-alias-bg-base, transparent); color: var(--dsw-alias-label-primary, inherit); }
-.mc-inner { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; font-size: 13.5px; line-height: 1.6; }
+.mc-page { box-sizing: border-box; height: 100%; overflow-y: auto; padding: 24px 32px 80px; background: var(--dsw-alias-bg-base, transparent); color: var(--dsw-alias-label-primary, inherit); }
+.mc-inner { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; font-size: 13.5px; line-height: 1.6; }
 .mc-head { display: flex; align-items: flex-start; gap: 12px; }
 .mc-back { appearance: none; border: 1px solid transparent; background: transparent; color: inherit; border-radius: 6px; padding: 3px 8px; font: inherit; font-size: 12px; cursor: pointer; opacity: .72; white-space: nowrap; }
 .mc-back:hover { opacity: 1; background: color-mix(in srgb, currentColor 8%, transparent); }
 .mc-titleblock { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .mc-h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
-.mc-sub { margin: 0; font-size: 12.5px; color: var(--dsw-alias-label-secondary, inherit); opacity: .9; }
+.mc-sub { margin: 0; font-size: 12.5px; color: var(--dsw-alias-label-secondary, inherit); }
 .mc-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 0 12px; border-bottom: 1px solid var(--dsw-alias-border-l1, color-mix(in srgb, currentColor 12%, transparent)); }
 .mc-bar .mc-status { font-size: 12px; color: var(--dsw-alias-label-secondary, inherit); margin-left: auto; }
-.mc-btn { appearance: none; border: 1px solid var(--dsw-alias-border-l2, color-mix(in srgb, currentColor 20%, transparent)); background: transparent; color: inherit; border-radius: 6px; padding: 4px 12px; font: inherit; font-size: 12.5px; cursor: pointer; white-space: nowrap; }
+.mc-btn { appearance: none; border: 1px solid var(--dsw-alias-border-l2, color-mix(in srgb, currentColor 20%, transparent)); background: transparent; color: inherit; border-radius: 8px; padding: 6px 14px; font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; }
 .mc-btn:hover:not(:disabled) { background: color-mix(in srgb, currentColor 8%, transparent); }
 .mc-btn:disabled { opacity: .45; cursor: default; }
-.mc-btn.primary { background: var(--dsw-alias-brand-primary, #0e639c); border-color: var(--dsw-alias-brand-primary, #0e639c); color: #fff; }
-.mc-btn.primary:hover:not(:disabled) { filter: brightness(1.12); }
+.mc-btn.primary { background: var(--dsw-alias-brand-primary, #2f6fed); border-color: var(--dsw-alias-brand-primary, #2f6fed); color: #fff; }
+.mc-btn.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--dsw-alias-brand-primary, #2f6fed) 74%, #000); border-color: color-mix(in srgb, var(--dsw-alias-brand-primary, #2f6fed) 74%, #000); color: #fff; }
+.mc-btn.primary:disabled { background: color-mix(in srgb, var(--dsw-alias-brand-primary, #2f6fed) 50%, var(--dsw-alias-bg-base, #000)); border-color: transparent; color: color-mix(in srgb, #fff 85%, transparent); }
 .mc-btn.danger { color: var(--dsw-alias-state-error-primary, #d64545); border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d64545) 45%, transparent); }
-.mc-btn.small { padding: 2px 9px; font-size: 12px; }
-.mc-input { box-sizing: border-box; width: 100%; padding: 5px 9px; border-radius: 6px; border: 1px solid var(--dsw-alias-border-l2, color-mix(in srgb, currentColor 22%, transparent)); background: color-mix(in srgb, currentColor 4%, transparent); color: inherit; font: inherit; font-size: 12.5px; }
-.mc-input:focus { outline: 1px solid var(--dsw-alias-brand-primary, #0e639c); outline-offset: 0; }
-.mc-input.mono, .mc-area.mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
-.mc-area { box-sizing: border-box; width: 100%; min-height: 54px; resize: vertical; padding: 6px 9px; border-radius: 6px; border: 1px solid var(--dsw-alias-border-l2, color-mix(in srgb, currentColor 22%, transparent)); background: color-mix(in srgb, currentColor 4%, transparent); color: inherit; font: inherit; font-size: 12.5px; }
-.mc-area:focus { outline: 1px solid var(--dsw-alias-brand-primary, #0e639c); outline-offset: 0; }
-.mc-search { display: flex; align-items: center; gap: 8px; }
-.mc-search .mc-input { flex: 1; }
+.mc-btn.danger:hover:not(:disabled) { background: color-mix(in srgb, var(--dsw-alias-state-error-primary, #d64545) 12%, transparent); }
+.mc-btn.small { padding: 3px 10px; font-size: 12px; border-radius: 7px; }
+.mc-input { box-sizing: border-box; width: 100%; min-height: 38px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--dsw-alias-border-l2, color-mix(in srgb, currentColor 20%, transparent)); background: color-mix(in srgb, currentColor 3%, transparent); color: inherit; font: inherit; font-size: 13.5px; }
+.mc-input::placeholder { color: var(--dsw-alias-label-secondary, inherit); opacity: .55; }
+.mc-input:focus { outline: 1px solid var(--dsw-alias-brand-primary, #2f6fed); outline-offset: 0; border-color: transparent; }
+.mc-input.mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12.5px; }
 .mc-section { display: flex; flex-direction: column; gap: 10px; }
-.mc-h2 { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--dsw-alias-label-secondary, inherit); opacity: .8; }
+.mc-h2 { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--dsw-alias-label-secondary, inherit); }
 .mc-muted { margin: 0; font-size: 12.5px; color: var(--dsw-alias-label-secondary, inherit); }
-.mc-card { border: 1px solid var(--dsw-alias-border-l1, color-mix(in srgb, currentColor 13%, transparent)); border-radius: 10px; overflow: hidden; background: var(--dsw-alias-bg-layer-1, transparent); }
-.mc-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--dsw-alias-border-l1, color-mix(in srgb, currentColor 10%, transparent)); }
+.mc-card { border: 1px solid var(--dsw-alias-border-l1, color-mix(in srgb, currentColor 13%, transparent)); border-radius: 12px; overflow: hidden; background: var(--dsw-alias-bg-layer-1, transparent); }
+.mc-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--dsw-alias-border-l1, color-mix(in srgb, currentColor 10%, transparent)); }
 .mc-row:first-child { border-top: 0; }
-.mc-row:hover { background: color-mix(in srgb, currentColor 4%, transparent); }
-.mc-dotwrap { appearance: none; border: 0; background: transparent; padding: 4px; margin: 2px 0 0; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex: none; }
+.mc-row:hover { background: color-mix(in srgb, currentColor 3%, transparent); }
+.mc-dotwrap { appearance: none; border: 0; background: transparent; padding: 5px; margin: 2px 0 0; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; flex: none; }
 .mc-dotwrap:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
+.mc-dotwrap:disabled { cursor: default; }
 .mc-dot { width: 9px; height: 9px; border-radius: 50%; display: block; flex: none; background: var(--mc-tone, var(--dsw-alias-state-idle-primary, #8a8f98)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--mc-tone, #8a8f98) 16%, transparent); }
 .mc-dot.ok { --mc-tone: var(--dsw-alias-state-success-primary, #2e9e5b); }
 .mc-dot.error { --mc-tone: var(--dsw-alias-state-error-primary, #d64545); }
@@ -267,10 +301,10 @@ window.__ModuleLoader__.load({
 .mc-dot.idle { --mc-tone: var(--dsw-alias-state-idle-primary, #8a8f98); box-shadow: none; }
 @keyframes mc-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .mc-dot.busy { animation: none; } }
-.mc-main { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.mc-main { display: flex; flex-direction: column; gap: 3px; flex: 1 1 auto; min-width: 0; }
 .mc-rowhead { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-.mc-name { font-weight: 600; font-size: 13px; }
-.mc-pill { font-size: 11px; padding: 0 7px; border-radius: 10px; border: 1px solid var(--dsw-alias-border-l2, color-mix(in srgb, currentColor 20%, transparent)); color: var(--dsw-alias-label-secondary, inherit); white-space: nowrap; }
+.mc-name { font-weight: 600; font-size: 13.5px; }
+.mc-pill { font-size: 11px; padding: 0 8px; border-radius: 10px; border: 1px solid var(--dsw-alias-border-l2, color-mix(in srgb, currentColor 20%, transparent)); color: var(--dsw-alias-label-secondary, inherit); white-space: nowrap; }
 .mc-pill.warn { border-color: color-mix(in srgb, var(--dsw-alias-state-warn-primary, #c98a00) 55%, transparent); color: var(--dsw-alias-state-warn-primary, #c98a00); }
 .mc-pill.ok { border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary, #2e9e5b) 55%, transparent); color: var(--dsw-alias-state-success-primary, #2e9e5b); }
 .mc-state { font-size: 12px; color: var(--dsw-alias-label-secondary, inherit); }
@@ -281,29 +315,38 @@ window.__ModuleLoader__.load({
 .mc-detail { font-size: 12px; overflow-wrap: anywhere; color: var(--dsw-alias-label-secondary, inherit); }
 .mc-detail.error { color: var(--dsw-alias-state-error-primary, #d64545); }
 .mc-detail.warn { color: var(--dsw-alias-state-warn-primary, #c98a00); }
-.mc-actions { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: flex-end; max-width: 320px; }
-.mc-form { display: flex; flex-direction: column; gap: 12px; padding: 14px; }
-.mc-field { display: flex; flex-direction: column; gap: 4px; }
-.mc-label { font-size: 12px; color: var(--dsw-alias-label-secondary, inherit); }
+.mc-actions { display: flex; align-items: center; gap: 6px; flex: none; flex-wrap: wrap; justify-content: flex-end; }
+.mc-editor { display: flex; flex-direction: column; gap: 14px; }
+.mc-sheet { border: 1px solid var(--dsw-alias-border-l1, color-mix(in srgb, currentColor 13%, transparent)); border-radius: 14px; background: var(--dsw-alias-bg-layer-1, transparent); padding: 0 18px; }
+.mc-frow { display: flex; flex-direction: column; gap: 9px; padding: 16px 0; border-top: 1px solid var(--dsw-alias-border-l1, color-mix(in srgb, currentColor 9%, transparent)); }
+.mc-frow:first-child { border-top: 0; }
+.mc-frow.split { flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; }
+.mc-flabel { font-size: 13.5px; font-weight: 600; }
+.mc-fhint { margin: 0; font-size: 12px; color: var(--dsw-alias-label-secondary, inherit); }
 .mc-hint { font-size: 11.5px; color: var(--dsw-alias-label-secondary, inherit); opacity: .8; }
-.mc-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.mc-seg { display: inline-flex; border: 1px solid var(--dsw-alias-border-l2, color-mix(in srgb, currentColor 20%, transparent)); border-radius: 7px; overflow: hidden; }
-.mc-seg button { appearance: none; border: 0; background: transparent; color: inherit; font: inherit; font-size: 12.5px; padding: 4px 14px; cursor: pointer; }
+.mc-iter { display: flex; align-items: center; gap: 8px; }
+.mc-iter > .mc-input { flex: 1 1 auto; min-width: 0; }
+.mc-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.mc-trash { appearance: none; border: 0; background: transparent; color: inherit; opacity: .5; border-radius: 7px; padding: 7px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex: none; }
+.mc-trash:hover { opacity: .95; background: color-mix(in srgb, currentColor 8%, transparent); }
+.mc-addbtn { width: 100%; appearance: none; border: 0; border-radius: 10px; padding: 11px 12px; background: color-mix(in srgb, currentColor 6%, transparent); color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.mc-addbtn:hover { background: color-mix(in srgb, currentColor 11%, transparent); }
+.mc-seg { display: inline-flex; border: 1px solid var(--dsw-alias-border-l2, color-mix(in srgb, currentColor 18%, transparent)); border-radius: 9px; overflow: hidden; background: color-mix(in srgb, currentColor 4%, transparent); flex: none; }
+.mc-seg button { appearance: none; border: 0; background: transparent; color: inherit; font: inherit; font-size: 13px; padding: 6px 18px; cursor: pointer; }
 .mc-seg button:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
-.mc-seg button[aria-pressed='true'] { background: var(--dsw-alias-brand-primary, #0e639c); color: #fff; }
-.mc-formbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.mc-formbar .mc-status { font-size: 12px; margin-left: auto; }
-.mc-switchrow { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
-.mc-switch { width: 15px; height: 15px; accent-color: var(--dsw-alias-brand-primary, #0e639c); cursor: pointer; }
-.mc-msg { font-size: 12.5px; }
+.mc-seg button[aria-pressed='true'] { background: color-mix(in srgb, currentColor 14%, transparent); font-weight: 600; }
+.mc-switchrow { display: flex; align-items: center; gap: 10px; font-size: 13.5px; }
+.mc-switch { width: 16px; height: 16px; accent-color: var(--dsw-alias-brand-primary, #2f6fed); cursor: pointer; }
+.mc-savebar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 6px 2px 0; }
+.mc-savebar .mc-status { margin-right: auto; }
+.mc-msg { margin: 0; font-size: 12.5px; }
 .mc-msg.ok { color: var(--dsw-alias-state-success-primary, #2e9e5b); }
 .mc-msg.error { color: var(--dsw-alias-state-error-primary, #d64545); }
-.mc-help { border: 1px solid var(--dsw-alias-border-l1, color-mix(in srgb, currentColor 12%, transparent)); border-radius: 10px; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+.mc-help { border: 1px solid var(--dsw-alias-border-l1, color-mix(in srgb, currentColor 12%, transparent)); border-radius: 12px; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
 .mc-help summary { cursor: pointer; font-size: 12px; color: var(--dsw-alias-label-secondary, inherit); }
 .mc-help p { margin: 0; font-size: 12.5px; color: var(--dsw-alias-label-secondary, inherit); }
-.mc-empty { padding: 14px 12px; font-size: 12.5px; color: var(--dsw-alias-label-secondary, inherit); }
+.mc-empty { padding: 16px 14px; font-size: 12.5px; color: var(--dsw-alias-label-secondary, inherit); }
 .mc-counts { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dsw-alias-label-secondary, inherit); }
-.mc-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 `
 
     // ------------------------------------------------------------ utilities
@@ -455,25 +498,21 @@ window.__ModuleLoader__.load({
       return String(text ?? '').split(/\r?\n/).map(line => line.trim()).filter(line => line !== '')
     }
 
-    function parseArgs(text) {
-      return splitLines(text)
+    function pairsOf(value) {
+      if (!isObject(value)) return []
+      return Object.entries(value).map(([key, item]) => ({ key, value: String(item ?? '') }))
     }
 
-    // One link per line. Returns the parsed pairs and the lines it could not
-    // split, so a mistyped header is reported instead of silently dropped.
-    function parsePairsStrict(text, separator) {
+    // Blank rows are ignored; a value without its key is reported instead of
+    // being dropped, so a half-typed row never saves as something else.
+    function collectPairs(rows, label) {
       const pairs = {}
       const bad = []
-      for (const line of splitLines(text)) {
-        const index = line.indexOf(separator)
-        if (index <= 0) {
-          bad.push(line)
-          continue
-        }
-        const key = line.slice(0, index).trim()
-        const value = line.slice(index + 1).trim()
+      for (const row of Array.isArray(rows) ? rows : []) {
+        const key = String(row?.key ?? '').trim()
+        const value = String(row?.value ?? '').trim()
         if (key === '') {
-          bad.push(line)
+          if (value !== '') bad.push(`${label}=${value}`)
           continue
         }
         pairs[key] = value
@@ -481,24 +520,25 @@ window.__ModuleLoader__.load({
       return { pairs: Object.keys(pairs).length === 0 ? undefined : pairs, bad }
     }
 
-    function pairsText(value, separator) {
-      if (!isObject(value)) return ''
-      return Object.entries(value).map(([key, item]) => `${key}${separator}${String(item ?? '')}`).join('\n')
-    }
-
     function formFromEntry(name, entry) {
+      const args = argsOf(entry)
+      const env = pairsOf(entry?.env)
+      const headers = pairsOf(entry?.headers)
       return {
         mode: 'edit',
         original: name,
         name,
         transport: entry?.transport === 'streamable-http' ? 'http' : 'stdio',
         command: String(entry?.command ?? ''),
-        args: argsOf(entry).join('\n'),
-        env: pairsText(entry?.env, '='),
         cwd: String(entry?.cwd ?? ''),
         url: String(entry?.url ?? ''),
-        headers: pairsText(entry?.headers, ': '),
+        args: args.length > 0 ? args : [''],
+        env: env.length > 0 ? env : [{ key: '', value: '' }],
+        headers: headers.length > 0 ? headers : [{ key: '', value: '' }],
         startup: entry?.startupTimeoutMs === undefined ? '' : String(entry.startupTimeoutMs),
+        toolTimeout: entry?.toolCallTimeoutMs === undefined ? '' : String(entry.toolCallTimeoutMs),
+        reconnect: entry?.reconnect?.enabled !== false,
+        expandTemplates: entry?.expandTemplates === true,
         enabled: entry?.enabled !== false,
       }
     }
@@ -510,14 +550,27 @@ window.__ModuleLoader__.load({
         name: '',
         transport: 'stdio',
         command: '',
-        args: '',
-        env: '',
         cwd: '',
         url: '',
-        headers: '',
+        args: [''],
+        env: [{ key: '', value: '' }],
+        headers: [{ key: '', value: '' }],
         startup: '',
+        toolTimeout: '',
+        reconnect: true,
+        expandTemplates: false,
         enabled: true,
       }
+    }
+
+    // Empty means "use the plugin default"; anything else must be a positive
+    // whole number of milliseconds.
+    function positiveNumber(raw) {
+      const value = String(raw ?? '').trim()
+      if (value === '') return undefined
+      const number = Number(value)
+      if (!Number.isFinite(number) || number <= 0) return null
+      return Math.round(number)
     }
 
     function entryFromForm(t, form) {
@@ -526,10 +579,12 @@ window.__ModuleLoader__.load({
         const command = String(form.command ?? '').trim()
         if (command === '') return { error: t('commandRequired') }
         entry.command = command
-        const args = parseArgs(form.args)
+        const args = (Array.isArray(form.args) ? form.args : [])
+          .map(value => String(value ?? '').trim())
+          .filter(value => value !== '')
         if (args.length > 0) entry.args = args
-        const env = parsePairsStrict(form.env, '=')
-        if (env.bad.length > 0) return { error: t('badPairs', { what: 'KEY=VALUE', lines: env.bad.join(' / ') }) }
+        const env = collectPairs(form.env, 'ENV')
+        if (env.bad.length > 0) return { error: t('pairNoKey', { what: t('env'), lines: env.bad.join(' / ') }) }
         if (env.pairs) entry.env = env.pairs
         const cwd = String(form.cwd ?? '').trim()
         if (cwd !== '') entry.cwd = cwd
@@ -537,28 +592,18 @@ window.__ModuleLoader__.load({
         const url = String(form.url ?? '').trim()
         if (!/^https?:\/\//i.test(url)) return { error: t('urlRequired') }
         entry.url = url
-        // A header line may use either `Name: value` or `Name=value`; a line
-        // with neither is reported instead of being dropped.
-        const headers = {}
-        const bad = []
-        for (const line of splitLines(form.headers)) {
-          const colon = line.indexOf(':')
-          const index = colon > 0 ? colon : line.indexOf('=')
-          if (index <= 0) {
-            bad.push(line)
-            continue
-          }
-          headers[line.slice(0, index).trim()] = line.slice(index + 1).trim()
-        }
-        if (bad.length > 0) return { error: t('badPairs', { what: 'Name: value', lines: bad.join(' / ') }) }
-        if (Object.keys(headers).length > 0) entry.headers = headers
+        const headers = collectPairs(form.headers, 'HEADER')
+        if (headers.bad.length > 0) return { error: t('pairNoKey', { what: t('headers'), lines: headers.bad.join(' / ') }) }
+        if (headers.pairs) entry.headers = headers.pairs
       }
-      const rawTimeout = String(form.startup ?? '').trim()
-      if (rawTimeout !== '') {
-        const timeout = Number(rawTimeout)
-        if (!Number.isFinite(timeout) || timeout <= 0) return { error: t('startupInvalid') }
-        entry.startupTimeoutMs = Math.round(timeout)
-      }
+      const startup = positiveNumber(form.startup)
+      if (startup === null) return { error: t('startupInvalid') }
+      if (startup !== undefined) entry.startupTimeoutMs = startup
+      const toolTimeout = positiveNumber(form.toolTimeout)
+      if (toolTimeout === null) return { error: t('toolTimeoutInvalid') }
+      if (toolTimeout !== undefined) entry.toolCallTimeoutMs = toolTimeout
+      if (form.expandTemplates === true) entry.expandTemplates = true
+      if (form.reconnect === false) entry.reconnect = { enabled: false }
       return { entry }
     }
 
@@ -880,7 +925,7 @@ window.__ModuleLoader__.load({
         // Keep the fields this form does not model (toolCallTimeoutMs,
         // closeTimeoutMs, reconnect, …) instead of resetting them on every save.
         const base = original && isObject(servers[original]) ? { ...servers[original] } : {}
-        for (const key of ['transport', 'command', 'args', 'env', 'cwd', 'url', 'headers', 'startupTimeoutMs', 'enabled']) {
+        for (const key of ['transport', 'command', 'args', 'env', 'cwd', 'url', 'headers', 'startupTimeoutMs', 'toolCallTimeoutMs', 'expandTemplates', 'reconnect', 'enabled']) {
           delete base[key]
         }
         const next = { ...base, ...parsed.entry }
@@ -1010,108 +1055,164 @@ window.__ModuleLoader__.load({
           ))
       }
 
-      const formView = form === null ? null : h('div', { className: 'mc-card', key: 'form' },
-        h('div', { className: 'mc-form' },
-          h('div', { className: 'mc-rowhead' },
-            h('span', { className: 'mc-name' }, form.mode === 'edit' ? t('formEdit', { name: form.original }) : t('formAdd')),
+      const trashIcon = () => h('svg', { viewBox: '0 0 24 24', width: 16, height: 16, 'aria-hidden': true, style: { display: 'block' } },
+        h('path', { d: 'M4 7h16M9.5 7V5.2c0-.7.5-1.2 1.2-1.2h2.6c.7 0 1.2.5 1.2 1.2V7M6.6 7l.8 12.1c.05.7.6 1.2 1.3 1.2h6.6c.7 0 1.25-.5 1.3-1.2L17.4 7', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' }))
+
+      const setField = patch => setForm(current => (current === null ? current : { ...current, ...patch }))
+
+      // Key/value rows: input + input + trash, matching the reference form.
+      const pairRows = (rows, onChange, kind) => (Array.isArray(rows) ? rows : []).map((row, index) => h('div', { className: 'mc-pair', key: kind + '-' + index },
+        h('input', {
+          className: 'mc-input mono', value: row.key, placeholder: t('keyPlaceholder'), spellCheck: false,
+          'aria-label': t('keyPlaceholder'),
+          onChange: event => onChange(rows.map((item, at) => (at === index ? { ...item, key: event.target.value } : item))),
+        }),
+        h('input', {
+          className: 'mc-input mono', value: row.value, placeholder: t('valuePlaceholder'), spellCheck: false,
+          'aria-label': t('valuePlaceholder'),
+          onChange: event => onChange(rows.map((item, at) => (at === index ? { ...item, value: event.target.value } : item))),
+        }),
+        h('button', {
+          type: 'button', className: 'mc-trash', title: t('removeRow'), 'aria-label': t('removeRow'),
+          onClick: () => onChange(rows.filter((_, at) => at !== index)),
+        }, trashIcon()),
+      ))
+
+      const editor = form === null ? null : h('div', { className: 'mc-editor', key: 'editor' },
+        h('div', { className: 'mc-sheet' },
+          h('div', { className: 'mc-frow' },
+            h('label', { className: 'mc-flabel', htmlFor: 'mc-name' }, t('name')),
+            h('input', {
+              id: 'mc-name', className: 'mc-input mono', value: form.name, spellCheck: false,
+              placeholder: 'filesystem', autoFocus: true,
+              onChange: event => setField({ name: event.target.value }),
+            }),
+            h('p', { className: 'mc-fhint' }, t('nameHint')),
           ),
-          h('div', { className: 'mc-grid2' },
-            h('div', { className: 'mc-field' },
-              h('label', { className: 'mc-label', htmlFor: 'mc-name' }, t('name')),
-              h('input', {
-                id: 'mc-name', className: 'mc-input mono', value: form.name, spellCheck: false,
-                placeholder: 'filesystem',
-                onChange: event => setForm(current => ({ ...current, name: event.target.value })),
-              }),
-              h('span', { className: 'mc-hint' }, t('nameHint'))),
-            h('div', { className: 'mc-field' },
-              h('span', { className: 'mc-label' }, t('transport')),
-              h('div', { className: 'mc-seg' },
-                h('button', {
-                  type: 'button', 'aria-pressed': form.transport !== 'http',
-                  onClick: () => setForm(current => ({ ...current, transport: 'stdio' })),
-                }, t('stdio')),
-                h('button', {
-                  type: 'button', 'aria-pressed': form.transport === 'http',
-                  onClick: () => setForm(current => ({ ...current, transport: 'http' })),
-                }, t('http')))),
+          h('div', { className: 'mc-frow split' },
+            h('span', { className: 'mc-flabel' }, t('transport')),
+            h('div', { className: 'mc-seg', role: 'group', 'aria-label': t('transport') },
+              h('button', { type: 'button', 'aria-pressed': form.transport !== 'http', onClick: () => setField({ transport: 'stdio' }) }, t('stdio')),
+              h('button', { type: 'button', 'aria-pressed': form.transport === 'http', onClick: () => setField({ transport: 'http' }) }, t('http')),
+            ),
           ),
+        ),
+        h('div', { className: 'mc-sheet' },
           form.transport === 'http'
             ? h(React.Fragment, null,
-              h('div', { className: 'mc-field' },
-                h('label', { className: 'mc-label', htmlFor: 'mc-url' }, t('url')),
+              h('div', { className: 'mc-frow' },
+                h('label', { className: 'mc-flabel', htmlFor: 'mc-url' }, t('url')),
                 h('input', {
                   id: 'mc-url', className: 'mc-input mono', value: form.url, spellCheck: false,
                   placeholder: 'https://mcp.example.com/mcp',
-                  onChange: event => setForm(current => ({ ...current, url: event.target.value })),
-                })),
-              h('div', { className: 'mc-field' },
-                h('label', { className: 'mc-label', htmlFor: 'mc-headers' }, t('headers')),
-                h('textarea', {
-                  id: 'mc-headers', className: 'mc-area mono', value: form.headers, spellCheck: false,
-                  placeholder: 'Authorization: Bearer ${credential:MCP_TOKEN}',
-                  onChange: event => setForm(current => ({ ...current, headers: event.target.value })),
-                })))
+                  onChange: event => setField({ url: event.target.value }),
+                }),
+              ),
+              h('div', { className: 'mc-frow' },
+                h('span', { className: 'mc-flabel' }, t('headers')),
+                pairRows(form.headers, rows => setField({ headers: rows }), 'header'),
+                h('button', {
+                  type: 'button', className: 'mc-addbtn',
+                  onClick: () => setField({ headers: [...(form.headers ?? []), { key: '', value: '' }] }),
+                }, '＋ ' + t('addHeader')),
+              ),
+            )
             : h(React.Fragment, null,
-              h('div', { className: 'mc-field' },
-                h('label', { className: 'mc-label', htmlFor: 'mc-command' }, t('command')),
+              h('div', { className: 'mc-frow' },
+                h('label', { className: 'mc-flabel', htmlFor: 'mc-command' }, t('command')),
                 h('input', {
                   id: 'mc-command', className: 'mc-input mono', value: form.command, spellCheck: false,
                   placeholder: 'npx',
-                  onChange: event => setForm(current => ({ ...current, command: event.target.value })),
-                })),
-              h('div', { className: 'mc-field' },
-                h('label', { className: 'mc-label', htmlFor: 'mc-args' }, t('args')),
-                h('textarea', {
-                  id: 'mc-args', className: 'mc-area mono', value: form.args, spellCheck: false,
-                  placeholder: '-y\n@modelcontextprotocol/server-filesystem\nC:\\work',
-                  onChange: event => setForm(current => ({ ...current, args: event.target.value })),
-                })),
-              h('div', { className: 'mc-grid2' },
-                h('div', { className: 'mc-field' },
-                  h('label', { className: 'mc-label', htmlFor: 'mc-env' }, t('env')),
-                  h('textarea', {
-                    id: 'mc-env', className: 'mc-area mono', value: form.env, spellCheck: false,
-                    placeholder: 'GITHUB_TOKEN=${credential:GITHUB_TOKEN}',
-                    onChange: event => setForm(current => ({ ...current, env: event.target.value })),
-                  })),
-                h('div', { className: 'mc-field' },
-                  h('label', { className: 'mc-label', htmlFor: 'mc-cwd' }, t('cwd')),
+                  onChange: event => setField({ command: event.target.value }),
+                }),
+              ),
+              h('div', { className: 'mc-frow' },
+                h('span', { className: 'mc-flabel' }, t('args')),
+                (form.args ?? []).map((value, index) => h('div', { className: 'mc-iter', key: 'arg-' + index },
                   h('input', {
-                    id: 'mc-cwd', className: 'mc-input mono', value: form.cwd, spellCheck: false,
-                    placeholder: 'C:\\work',
-                    onChange: event => setForm(current => ({ ...current, cwd: event.target.value })),
-                  }))),
+                    className: 'mc-input mono', value, spellCheck: false, placeholder: t('argPlaceholder'),
+                    'aria-label': t('argPlaceholder') + ' ' + (index + 1),
+                    onChange: event => setField({ args: (form.args ?? []).map((item, at) => (at === index ? event.target.value : item)) }),
+                  }),
+                  h('button', {
+                    type: 'button', className: 'mc-trash', title: t('removeRow'), 'aria-label': t('removeRow'),
+                    onClick: () => setField({ args: (form.args ?? []).filter((_, at) => at !== index) }),
+                  }, trashIcon()),
+                )),
+                h('button', {
+                  type: 'button', className: 'mc-addbtn',
+                  onClick: () => setField({ args: [...(form.args ?? []), ''] }),
+                }, '＋ ' + t('addArg')),
+              ),
+              h('div', { className: 'mc-frow' },
+                h('span', { className: 'mc-flabel' }, t('env')),
+                pairRows(form.env, rows => setField({ env: rows }), 'env'),
+                h('button', {
+                  type: 'button', className: 'mc-addbtn',
+                  onClick: () => setField({ env: [...(form.env ?? []), { key: '', value: '' }] }),
+                }, '＋ ' + t('addEnv')),
+              ),
+              h('div', { className: 'mc-frow' },
+                h('label', { className: 'mc-flabel', htmlFor: 'mc-cwd' }, t('cwd')),
+                h('input', {
+                  id: 'mc-cwd', className: 'mc-input mono', value: form.cwd, spellCheck: false,
+                  placeholder: 'C:\\work',
+                  onChange: event => setField({ cwd: event.target.value }),
+                }),
+              ),
             ),
-          h('div', { className: 'mc-grid2' },
-            h('div', { className: 'mc-field' },
-              h('label', { className: 'mc-label', htmlFor: 'mc-startup' }, t('startup')),
+        ),
+        h('div', { className: 'mc-sheet' },
+          h('div', { className: 'mc-frow' },
+            h('span', { className: 'mc-flabel' }, t('advanced')),
+            h('div', { className: 'mc-pair' },
               h('input', {
-                id: 'mc-startup', className: 'mc-input', value: form.startup, inputMode: 'numeric',
-                placeholder: '30000',
-                onChange: event => setForm(current => ({ ...current, startup: event.target.value })),
-              })),
-            h('label', { className: 'mc-switchrow', htmlFor: 'mc-enabled' },
-              h('input', {
-                id: 'mc-enabled', type: 'checkbox', className: 'mc-switch',
-                checked: form.enabled !== false,
-                onChange: event => setForm(current => ({ ...current, enabled: event.target.checked })),
+                className: 'mc-input', value: form.startup, inputMode: 'numeric',
+                placeholder: t('startup'), 'aria-label': t('startup'),
+                onChange: event => setField({ startup: event.target.value }),
               }),
-              t('pluginFields')),
+              h('input', {
+                className: 'mc-input', value: form.toolTimeout, inputMode: 'numeric',
+                placeholder: t('toolTimeout'), 'aria-label': t('toolTimeout'),
+                onChange: event => setField({ toolTimeout: event.target.value }),
+              }),
+              h('span'),
+            ),
+            h('label', { className: 'mc-switchrow' },
+              h('input', {
+                type: 'checkbox', className: 'mc-switch', checked: form.reconnect !== false,
+                onChange: event => setField({ reconnect: event.target.checked }),
+              }),
+              t('reconnect'),
+            ),
+            h('label', { className: 'mc-switchrow' },
+              h('input', {
+                type: 'checkbox', className: 'mc-switch', checked: form.expandTemplates === true,
+                onChange: event => setField({ expandTemplates: event.target.checked }),
+              }),
+              t('templates'),
+            ),
+            h('label', { className: 'mc-switchrow' },
+              h('input', {
+                type: 'checkbox', className: 'mc-switch', checked: form.enabled !== false,
+                onChange: event => setField({ enabled: event.target.checked }),
+              }),
+              t('pluginFields'),
+            ),
           ),
-          h('div', { className: 'mc-formbar' },
-            h('button', {
-              type: 'button', className: 'mc-btn primary', disabled: saving,
-              onClick: () => { void submit() },
-            }, saving ? t('saving') : t('save')),
-            h('button', {
-              type: 'button', className: 'mc-btn',
-              onClick: () => { setForm(null); setMessage(null) },
-            }, t('cancel')),
-            message?.scope === 'form' ? h('span', { className: `mc-status mc-msg ${message.kind}` }, message.text) : null),
-        ))
-
-      const staticRows = store.staticRows ?? []
+        ),
+        h('div', { className: 'mc-savebar' },
+          message?.scope === 'form' ? h('span', { className: 'mc-status mc-msg ' + message.kind }, message.text) : null,
+          h('button', {
+            type: 'button', className: 'mc-btn', disabled: saving,
+            onClick: () => { setForm(null); setMessage(null) },
+          }, t('cancel')),
+          h('button', {
+            type: 'button', className: 'mc-btn primary', disabled: saving,
+            onClick: () => { void submit() },
+          }, saving ? t('saving') : t('save')),
+        ),
+      )
       const staticView = staticRows.length === 0
         ? h('p', { className: 'mc-muted' }, t('staticEmpty'))
         : staticRows.map(entry => {
@@ -1122,7 +1223,8 @@ window.__ModuleLoader__.load({
             h('div', { className: 'mc-main' },
               h('div', { className: 'mc-rowhead' },
                 h('span', { className: 'mc-name' }, String(entry.entryId)),
-                h('span', { className: 'mc-pill' }, MCP_MODULE.replace('@deepseek-ai/', '')),
+                h('span', { className: 'mc-pill' }, t('staticPill')),
+                h('span', { className: 'mc-pill' }, t('readonlyPill')),
                 h('span', { className: `mc-state ${phase.tone}` }, phase.label),
               ),
               h('div', { className: 'mc-spec' }, `${MCP_MODULE} · ${String(entry.moduleName ?? '')}`),
@@ -1132,11 +1234,23 @@ window.__ModuleLoader__.load({
 
       const served = store.flags.settings
       const pending = !served && loadError === null
+      const editing = form !== null
       const head = h('div', { className: 'mc-head', key: 'head' },
-        h('button', { type: 'button', className: 'mc-back', onClick: close }, '← ' + t('back')),
+        h('button', {
+          type: 'button', className: 'mc-back',
+          onClick: () => { if (editing) { setForm(null); setMessage(null) } else { close() } },
+        }, '← ' + t('back')),
         h('div', { className: 'mc-titleblock' },
-          h('h1', { className: 'mc-h1' }, t('title')),
-          h('p', { className: 'mc-sub' }, t('subtitle'))))
+          h('h1', { className: 'mc-h1' }, editing
+            ? (form.mode === 'edit' ? t('formEdit', { name: form.original }) : t('formAdd'))
+            : t('title')),
+          h('p', { className: 'mc-sub' }, editing ? t('editorSubtitle') : t('subtitle'))))
+
+      if (editing) {
+        return h('div', { className: 'mc-page' },
+          h('style', { key: 'css' }, CSS),
+          h('div', { className: 'mc-inner' }, head, editor))
+      }
 
       if (pending && serverNames.length === 0) {
         return h('div', { className: 'mc-page' },
@@ -1151,7 +1265,7 @@ window.__ModuleLoader__.load({
           h('div', { className: 'mc-bar', key: 'bar' },
             h('button', {
               type: 'button', className: 'mc-btn primary',
-              disabled: form !== null || loading || !!loadError,
+              disabled: loading || !!loadError,
               onClick: () => { setMessage(null); setForm(blankForm()) },
             }, t('add')),
             h('button', {
@@ -1165,7 +1279,7 @@ window.__ModuleLoader__.load({
             }, checking ? t('checking') : t('checkAll')),
             h('span', { className: 'mc-status' }, loadError ? '' : t('countSummary', summary))),
 
-          message && message.scope !== 'form' ? h('p', { className: `mc-msg ${message.kind}`, key: 'msg' }, message.text) : null,
+          message && message.scope !== 'form' ? h('p', { className: 'mc-msg ' + message.kind, key: 'msg' }, message.text) : null,
           loadError ? h('p', { className: 'mc-msg error', key: 'loaderr' }, loadError) : null,
           !store.flags.manager
             ? h('p', { className: 'mc-msg error', key: 'mgrerr' }, t('noManagerApi'))
@@ -1174,8 +1288,6 @@ window.__ModuleLoader__.load({
             ? h('p', { className: 'mc-msg error', key: 'streamerr' }, t('streamLost', { reason: store.errors.managerStream }))
             : null,
 
-          formView,
-
           h('div', { className: 'mc-section', key: 'list' },
             h('div', { className: 'mc-rowhead' },
               h('p', { className: 'mc-h2' }, t('sectionList')),
@@ -1183,7 +1295,7 @@ window.__ModuleLoader__.load({
                 ? h('input', {
                   className: 'mc-input mono', value: query, placeholder: t('search'),
                   'aria-label': t('search'), spellCheck: false,
-                  style: { maxWidth: '280px', marginLeft: 'auto' },
+                  style: { maxWidth: '280px', marginLeft: 'auto', minHeight: '32px' },
                   onChange: event => setQuery(event.target.value),
                 })
                 : null),
