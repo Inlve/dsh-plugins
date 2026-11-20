@@ -2,6 +2,14 @@
 
 All notable changes to this repository are documented here.
 
+## Unreleased
+
+### Fixed
+
+- MCP 面板恢复从 store 读取 `staticRows`；修复表单重构遗漏变量声明导致打开页面时抛出
+  `ReferenceError` 并显示空白。新增真实 React 服务端渲染回归测试，覆盖加载、空列表、静态行、
+  受管行操作和 STDIO/HTTP 添加与编辑视图；不代表浏览器交互或视觉验收。
+
 ## [0.2.0] - 2026-11-20
 
 ### Changed

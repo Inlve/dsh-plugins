@@ -1213,6 +1213,7 @@ window.__ModuleLoader__.load({
           }, saving ? t('saving') : t('save')),
         ),
       )
+      const staticRows = store.staticRows
       const staticView = staticRows.length === 0
         ? h('p', { className: 'mc-muted' }, t('staticEmpty'))
         : staticRows.map(entry => {
