@@ -7,8 +7,8 @@
   "author": "Inlve",
   "packageManager": "pnpm@11.28.5",
   "scripts": {
-    "check": "node --check packages/web-fetch-clash/index.js && node --check packages/web-fetch-clash/client.js",
-    "test": "node --test --test-isolation=none packages/web-fetch-clash/test/basic.test.mjs"
+    "check": "node --check packages/web-fetch-clash/index.js && node --check packages/web-fetch-clash/client.js && node --check packages/sandbox-guard/index.js && node --check packages/sandbox-guard/client.js && node --check packages/sandbox-guard/lib/policy.js && node --check packages/sandbox-guard/lib/audit.js && node --check packages/sandbox-guard/lib/trust.js && node --check packages/toolchain-env/index.js && node --check packages/toolchain-env/client.js && node --check packages/toolchain-env/lib/pathset.js && node --check packages/toolchain-env/lib/discover.js && node --check packages/toolchain-env/lib/entries.js && node --check packages/toolchain-env/lib/scan.js && node --check packages/toolchain-env/lib/versions.js && node --check packages/toolchain-env/lib/audit.js",
+    "test": "node --test --test-isolation=none packages/web-fetch-clash/test/basic.test.mjs packages/sandbox-guard/test/basic.test.mjs packages/sandbox-guard/test/policy.test.mjs packages/sandbox-guard/test/trust.test.mjs packages/toolchain-env/test/pathset.test.mjs packages/toolchain-env/test/discover.test.mjs packages/toolchain-env/test/versions.test.mjs packages/toolchain-env/test/entries.test.mjs packages/toolchain-env/test/scan.test.mjs packages/toolchain-env/test/apply.test.mjs"
   },
   "devDependencies": {
     "@deepseek-ai/schemastery": "^3.18.5"

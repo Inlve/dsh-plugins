@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Toolchain environment",
+    "description": "Appends manager-owned toolchains (fnm, pnpm, pyenv, Volta, mise, ...) to the PATH every DSH child process inherits, so the managed shell, terminals, MCP servers and subagents resolve them. The sidebar's Toolchain page lets you browse, tick and override paths; saving applies on the next command. Append-only, restored when DSH exits, every change audited.",
+    "detail": "docs/DETAIL.md"
+  }
+}

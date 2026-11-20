@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Toolchain environment">
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="#0f1726"/>
+  <path d="M14 18h18a5 5 0 0 1 5 5v18a5 5 0 0 1-5 5H14" fill="none" stroke="#5eead4" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="14" cy="18" r="4.5" fill="#5eead4"/>
+  <circle cx="14" cy="46" r="4.5" fill="#5eead4"/>
+  <path d="M44 27h9M44 37h9M44 46h6" stroke="#93a4c4" stroke-width="3.5" stroke-linecap="round"/>
+</svg>

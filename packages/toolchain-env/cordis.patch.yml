@@ -1,0 +1,33 @@
+- insert:
+    - id: toolchain-env
+      name: '@inlve/dsh-toolchain-env'
+      config:
+        # Compose the host PATH so every DSH child process (pwsh/bash tools,
+        # the Web terminal, MCP servers, subagents) resolves the toolchains a
+        # version manager installed outside the workspace.
+        enabled: true
+        # Append by default: never shadow an existing resolution, and never put
+        # a user-writable directory ahead of the system directories.
+        position: append
+        # Built-in manager table (fnm, pnpm, pyenv-win, volta, mise, scoop,
+        # winget, rustup, bun, deno, go, dotnet tools, uv, nvm-windows).
+        discover: true
+        pathEntries: []
+        # Re-check the candidate directories this often while shells run, so a
+        # freshly installed tool becomes visible without restarting DSH.
+        refreshTtlMs: 30000
+        # One real pwsh probe after activation turns "silently not applied"
+        # into a recorded warning.
+        selfTestOnActivate: true
+        # Warn (audit only, never block) when a workspace asks for a Node
+        # version other than the manager's default.
+        warnOnVersionFile: true
+        # Settings panel (sidebar → 工具链). One "id | path | note" per line,
+        # %VAR% and ~ expanded, a leading ! disables a line, # starts a comment.
+        # Edited from the panel; applied on the next command, no restart.
+        toolchainEntries: ''
+        # Also add what the auto-scan finds existing. It overlaps `discover`
+        # (duplicates are added once), so set both to false to keep PATH static.
+        toolchainAutoScan: true
+        # append | prepend; empty follows `position` above.
+        toolchainPosition: ''

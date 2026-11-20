@@ -1,0 +1,64 @@
+{
+  "name": "@inlve/dsh-toolchain-env",
+  "version": "0.2.0",
+  "description": "Expose manager-owned toolchains (fnm, pnpm, pyenv, volta, scoop, ...) to every DSH child process by composing the host PATH, with a browsable settings panel, discovery, audit, and diagnostics",
+  "license": "MIT",
+  "author": "Inlve",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Inlve/dsh-plugins.git",
+    "directory": "packages/toolchain-env"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "windows",
+    "path",
+    "environment",
+    "toolchain",
+    "settings",
+    "panel",
+    "fnm",
+    "pnpm",
+    "node"
+  ],
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "lib",
+    "cordis.patch.yml",
+    "locale",
+    "docs",
+    "icon.svg",
+    "README.md"
+  ],
+  "engines": {
+    "dsh": ">=0.2.0-0 <0.3.0-0"
+  },
+  "scripts": {
+    "check": "node --check index.js && node --check client.js && node --check lib/pathset.js && node --check lib/discover.js && node --check lib/scan.js && node --check lib/entries.js && node --check lib/versions.js && node --check lib/audit.js",
+    "test": "node --test --test-isolation=none test/pathset.test.mjs test/discover.test.mjs test/versions.test.mjs test/entries.test.mjs test/scan.test.mjs test/apply.test.mjs"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/schemastery": "^3.18.5"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": ["@deepseek-ai/dsh-client-ui-sidebar"]
+    }
+  }
+}

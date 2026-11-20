@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "工具链环境",
+    "description": "把版本管理器安装在工作区外的工具链（fnm、pnpm、pyenv、Volta、mise…）追加进 DSH 子进程的 PATH，让受管 shell、终端、MCP 与子 agent 都能解析到；左侧栏「工具链」页面可浏览、勾选、覆盖路径，保存即生效，只追加不覆盖，退出即还原，每次变更留审计。",
+    "detail": "docs/DETAIL.md"
+  }
+}
