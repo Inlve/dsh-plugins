@@ -107,6 +107,10 @@ export const Config = Schema.object({
     .description('Trusted directories edited from the panel: one per line, "path | note", with %VAR% expansion. Append " !ack" to a line the classifier flags as risky. Applies on the next command or session, without a restart.'),
   trustAutoGrant: VOLATILE(Schema.boolean().default(true))
     .description('Auto-grant the panel list for every session workspace. Turn off to keep the list as documentation only.'),
+  escalationEnabled: VOLATILE(Schema.boolean())
+    .description('Panel override for escalation.enabled. Unset follows the declarative config.'),
+  escalationRulesJson: VOLATILE(Schema.string().default(''))
+    .description('Panel override for escalation.rules: a JSON array of rule objects. Empty follows the declarative config.'),
 })
 
 const ATTENTION = new Set([
@@ -179,6 +183,33 @@ export function apply(ctx, rawConfig) {
     if (typeof live === 'boolean') return live
     const fallback = readVolatile(config.trustAutoGrant)
     return typeof fallback === 'boolean' ? fallback : true
+  }
+
+  const escalationCache = { key: null, compiled: null }
+
+  /**
+   * Escalation policy: panel overrides (volatile) layered over the declarative
+   * config, read live so a panel save applies on the next request.
+   */
+  function escalationSettings() {
+    const liveEnabled = readVolatile(liveConfig.escalationEnabled)
+    const enabled = typeof liveEnabled === 'boolean' ? liveEnabled : config.escalation.enabled
+    const text = String(readVolatile(liveConfig.escalationRulesJson) ?? '').trim()
+    if (text === '') {
+      return { enabled, source: 'config', rulesJson: '', compiled }
+    }
+    if (escalationCache.key !== text) {
+      try {
+        const parsed = JSON.parse(text)
+        escalationCache.compiled = Array.isArray(parsed)
+          ? compileRules(parsed)
+          : { rules: [], errors: [{ index: 0, id: null, message: '规则必须是 JSON 数组' }] }
+      } catch (error) {
+        escalationCache.compiled = { rules: [], errors: [{ index: 0, id: null, message: `JSON 解析失败：${error?.message ?? error}` }] }
+      }
+      escalationCache.key = text
+    }
+    return { enabled, source: 'panel', rulesJson: text, compiled: escalationCache.compiled }
   }
 
   function readExtraRoots() {
@@ -741,9 +772,10 @@ export function apply(ctx, rawConfig) {
       const pending = callId === '' ? undefined : pendingEscalations.get(callId)
       if (!pending) return await next()
       pendingEscalations.delete(callId)
-      if (!config.escalation.enabled) return await next()
+      const settings = escalationSettings()
+      if (!settings.enabled) return await next()
 
-      const verdict = evaluateRules(compiled.rules, pending)
+      const verdict = evaluateRules(settings.compiled.rules, pending)
       const granted = verdict.decision === 'grant'
       await audit.append({
         at: new Date().toISOString(),
@@ -767,10 +799,13 @@ export function apply(ctx, rawConfig) {
   }
 
   function escalationState() {
+    const settings = escalationSettings()
     return {
-      enabled: config.escalation.enabled,
-      rules: compiled.rules,
-      errors: compiled.errors,
+      enabled: settings.enabled,
+      source: settings.source,
+      rules: settings.compiled.rules,
+      errors: settings.compiled.errors,
+      rulesJson: settings.rulesJson,
       auditFile: audit.file,
       pendingCount: pendingEscalations.size,
       pending: [...pendingEscalations.values()].slice(-5).map((entry) => ({
@@ -1409,20 +1444,25 @@ export function apply(ctx, rawConfig) {
   ctx.effect(() => ctx.commands.register({
     name: 'grants',
     description: '查看沙箱提权策略与最近的自动放行记录',
-    input: { hint: '[list|audit] [条数]' },
+    input: { hint: '[list|audit] [条数] [--json]' },
     recordInput: false,
     async handler(invocation) {
       const parts = String(invocation.rawInput ?? '').trim().split(/\s+/).filter(Boolean)
-      const verb = (parts[0] ?? 'list').toLowerCase()
+      const flags = new Set(parts.filter(part => part.startsWith('--')))
+      const words = parts.filter(part => !part.startsWith('--'))
+      const verb = (words[0] ?? 'list').toLowerCase()
+      const asJson = flags.has('--json')
       try {
         if (verb === 'audit') {
-          const raw = Number.parseInt(parts[1] ?? '10', 10)
-          const limit = Number.isFinite(raw) ? Math.min(100, Math.max(1, raw)) : 10
+          const raw = Number.parseInt(words[1] ?? '20', 10)
+          const limit = Number.isFinite(raw) ? Math.min(200, Math.max(1, raw)) : 20
           const entries = await audit.tail(limit)
+          if (asJson) return { kind: 'success', text: JSON.stringify({ ok: true, action: 'audit', auditFile: audit.file, entries }) }
           if (entries.length === 0) return { kind: 'success', text: `暂无提权记录（${audit.file}）` }
           return { kind: 'success', text: formatEscalation(entries).join('\n') }
         }
         const state = escalationState()
+        if (asJson) return { kind: 'success', text: JSON.stringify({ ok: true, action: 'list', ...state }) }
         const lines = [`提权策略：${state.enabled ? '已启用' : '未启用'}（${state.rules.length} 条规则）`]
         for (const rule of state.rules) {
           const matcher = rule.commandPrefix

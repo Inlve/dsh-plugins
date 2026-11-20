@@ -166,3 +166,12 @@ DSH 的 Windows 沙箱用「受限令牌 + 能力 SID + 低完整性」判定写
 面板分两层：**清单**（全局偏好）由面板写入 volatile 配置 `trustRoots`——字段经 `configForms` 实时读写，保存即生效、无需重启，也**不需要会话 id**；**授权**（按工作区）由 Host 在 `tools/pre-execute` 按 TTL 检测清单变化、以及会话创建/启动时对已注册工作区补齐。`.volatile()` 是 schemastery 的方法，字段因此解析成「稳定引用 + `.get()`」，Host 每次读 `.get()` 拿最新值。授权状态是可选的附加信息：只有能拿到会话时才通过 `/trust list --json` 读取，拿不到不影响编辑。风险项不在面板确认（面板没有环境信息），而是在行尾写 `!ack`，Host 在授权时跳过未确认的项。样式参照 VSCode 设置页：等宽路径、行分隔、主按钮、折叠帮助区，颜色走 `currentColor`/`color-mix` 继承宿主主题。
 
 撤销用**对账**而不是列表操作：上一次的清单持久化在 `last-trust-roots.json`，清单变小时对“被移除的路径”遍历已注册工作区逐个撤销该工作区的 SID，并在目录上不再有任何 `S-1-4-*` ACE 时清掉 Low 标签。`verified` 的含义是“本工作区的 SID 已不存在”，不是“目录上没有任何能力 ACE”——多个工作区可以同时信任同一个目录。
+
+### 审计面板（client.js 的第二个入口）
+
+`@inlve/dsh-sandbox-guard/audit` 与信任面板同一套注册方式（图标 + keyed `main`），页面分两块：
+
+- **提权策略**：`escalationEnabled` / `escalationRulesJson` 两个 volatile 字段覆盖 `escalation.enabled` / `escalation.rules`；`escalationSettings()` 每次评估时读 `.get()`，面板保存后**下一次申请**即按新规则执行。规则 JSON 先在客户端解析校验，Host 的 `compileRules` 再判一次，编译错误经 `errors` 回显；保存前二次确认——命中规则意味着**不再询问**。
+- **申请记录**：`audit.tail()` 经 `/grants audit --json` 交给面板，按时间倒序、可按 `decision` 筛选；每条展示工具、请求模式、命中规则、结果、命令/路径与 Agent 填写的 `justification`，未命中原因在 `notes` 里。读记录需要会话（与授权状态相同），写规则不需要。
+
+写操作统一走 `writeField()`：直接调 `remote.settings.mutate('sandbox-guard', …)`，写前用 `describe()` 取权威 revision、冲突时重读重试一次——`ConfigFormController.set` 会把失败折叠成 `false`，不适合展示原因。

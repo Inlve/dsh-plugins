@@ -55,6 +55,34 @@ window.__ModuleLoader__.load({
         notGranted: '未授权',
         unchecked: '未检查',
         configHint: '配置文件写法',
+        auditLabel: '沙箱审计',
+        auditTitle: '沙箱提权与审计',
+        auditSubtitle: '提权规则决定哪些命令能自动绕过沙箱；申请记录是每次放权请求的可回溯日志。',
+        policySection: '提权策略',
+        policyEnabled: '自动放行已启用',
+        policyDisabled: '自动放行未启用',
+        policySourceConfig: '来源：配置文件',
+        policySourcePanel: '来源：面板覆盖',
+        policyRefresh: '刷新',
+        rulesEmpty: '还没有规则。',
+        rulesJsonTitle: '规则 JSON',
+        rulesJsonHint: '留空表示沿用配置文件里的 escalation.rules；保存后对下一次申请生效。',
+        rulesSave: '保存规则',
+        rulesClear: '清空（回到配置）',
+        rulesInvalid: '规则不是合法 JSON',
+        rulesNotArray: '规则必须是 JSON 数组',
+        confirmBody: '提权规则命中后会直接批准“绕过沙箱”的请求，不再询问你。确认保存？',
+        confirmYes: '确认保存',
+        confirmNo: '取消',
+        auditSection: '申请记录',
+        auditFilterAll: '全部',
+        auditFilterGranted: '已放行',
+        auditFilterAsked: '已询问',
+        auditEmpty: '还没有提权申请记录。',
+        auditUnavailable: '没有可用的会话，读不到申请记录；规则编辑不受影响。',
+        auditGranted: '放行',
+        auditAsked: '询问',
+        auditFile: '审计文件',
       },
       en: {
         sidebarLabel: 'Sandbox trust',
@@ -92,6 +120,34 @@ window.__ModuleLoader__.load({
         notGranted: 'not granted',
         unchecked: 'unchecked',
         configHint: 'Config file form',
+        auditLabel: 'Sandbox audit',
+        auditTitle: 'Sandbox escalation and audit',
+        auditSubtitle: 'Escalation rules decide which commands may bypass the sandbox automatically; the request log keeps every grant traceable.',
+        policySection: 'Escalation policy',
+        policyEnabled: 'Auto-approval on',
+        policyDisabled: 'Auto-approval off',
+        policySourceConfig: 'Source: config file',
+        policySourcePanel: 'Source: panel override',
+        policyRefresh: 'Refresh',
+        rulesEmpty: 'No rule yet.',
+        rulesJsonTitle: 'Rules JSON',
+        rulesJsonHint: 'Leave empty to keep escalation.rules from the config file; a save applies to the next request.',
+        rulesSave: 'Save rules',
+        rulesClear: 'Clear (back to config)',
+        rulesInvalid: 'Rules are not valid JSON',
+        rulesNotArray: 'Rules must be a JSON array',
+        confirmBody: 'A matching rule approves a sandbox-bypassing request without asking you. Save anyway?',
+        confirmYes: 'Save',
+        confirmNo: 'Cancel',
+        auditSection: 'Request log',
+        auditFilterAll: 'All',
+        auditFilterGranted: 'Granted',
+        auditFilterAsked: 'Asked',
+        auditEmpty: 'No escalation request yet.',
+        auditUnavailable: 'No session is reachable, so the request log is unavailable; rule editing still works.',
+        auditGranted: 'granted',
+        auditAsked: 'asked',
+        auditFile: 'Audit file',
       },
     }
 
@@ -140,6 +196,13 @@ window.__ModuleLoader__.load({
 .sg-err { color: #f14c4c; font-size: 12.5px; }
 .sg-help { border: 1px solid color-mix(in srgb, currentColor 12%, transparent); border-radius: 6px; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
 .sg-help p { margin: 0; }
+.sg-toggle { display: flex; align-items: center; gap: 6px; font-size: 12.5px; cursor: pointer; }
+.sg-filters { display: flex; gap: 6px; }
+.sg-codearea { flex: 1 1 100%; box-sizing: border-box; resize: vertical; line-height: 1.5; }
+.sg-confirm { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 1px solid #c98a00; border-radius: 6px; background: color-mix(in srgb, #c98a00 8%, transparent); }
+.sg-audit-row { display: grid; grid-template-columns: 130px 60px 130px 110px 64px minmax(120px, 1fr) minmax(120px, 1fr); align-items: center; gap: 8px; }
+.sg-time { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sg-ruleTitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
 `
 
     function PanelIcon({ size }) {
@@ -442,6 +505,251 @@ window.__ModuleLoader__.load({
         ))
     }
 
+    const AUDIT_ID = '@inlve/dsh-sandbox-guard/audit'
+
+    const RULE_SAMPLE = JSON.stringify([
+      {
+        id: 'npm-ci-noscripts',
+        title: 'npm 安装依赖但不跑生命周期脚本',
+        tools: ['pwsh', 'bash'],
+        commandPattern: '^npm\\s+ci\\s+--ignore-scripts(\\s+[^\\s]+)*$',
+        maxMode: 'workspace-write',
+      },
+    ], null, 2)
+
+    /** A config field from the settings snapshot: the user layer wins over the base. */
+    function fieldOf(snapshot, name) {
+      const user = snapshot?.user ?? snapshot?.view?.user ?? {}
+      const base = snapshot?.base ?? snapshot?.view?.base ?? {}
+      if (user && Object.prototype.hasOwnProperty.call(user, name)) return user[name]
+      return base ? base[name] : undefined
+    }
+
+    function formatTime(value) {
+      if (value === undefined || value === null || value === '') return '—'
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return String(value)
+      return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`
+    }
+
+    function ruleMatch(rule) {
+      if (!rule || typeof rule !== 'object') return ''
+      if (typeof rule.commandPrefix === 'string' && rule.commandPrefix !== '') return `前缀 ${rule.commandPrefix}`
+      if (typeof rule.commandPattern === 'string' && rule.commandPattern !== '') return `正则 ${rule.commandPattern}`
+      if (typeof rule.pathPrefix === 'string' && rule.pathPrefix !== '') return `路径 ${rule.pathPrefix}`
+      return '—'
+    }
+
+    function AuditIcon({ size }) {
+      const px = typeof size === 'number' ? size : 18
+      return h('svg', {
+        viewBox: '0 0 24 24', width: px, height: px, 'aria-hidden': true,
+        style: { display: 'block' },
+      },
+      h('path', { d: 'M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinejoin: 'round' }),
+      h('path', { d: 'M8 12h8M8 15.5h5', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round' }))
+    }
+
+    function AuditPanel({ t, ctx, close, store, write }) {
+      const [snapshot, setSnapshot] = React.useState(() => (store ? store.getSnapshot() : undefined))
+      const [rulesText, setRulesText] = React.useState(() => String(fieldOf(store ? store.getSnapshot() : undefined, 'escalationRulesJson') ?? ''))
+      const [dirty, setDirty] = React.useState(false)
+      const [busy, setBusy] = React.useState(false)
+      const [notice, setNotice] = React.useState(null)
+      const [policy, setPolicy] = React.useState(null)
+      const [entries, setEntries] = React.useState(null)
+      const [filter, setFilter] = React.useState('all')
+      const [confirming, setConfirming] = React.useState(false)
+
+      React.useEffect(() => {
+        if (!store || typeof store.subscribe !== 'function') return undefined
+        return store.subscribe(() => {
+          const next = store.getSnapshot()
+          setSnapshot(next)
+          if (!dirty) setRulesText(String(fieldOf(next, 'escalationRulesJson') ?? ''))
+        })
+      }, [store, dirty])
+
+      const load = React.useCallback(async () => {
+        const listed = await runCommand(ctx, '/grants list --json')
+        if (listed?.ok) setPolicy(listed)
+        const audited = await runCommand(ctx, '/grants audit --json')
+        if (audited?.ok && Array.isArray(audited.entries)) setEntries(audited.entries)
+        else setEntries(null)
+      }, [ctx])
+
+      React.useEffect(() => { void load() }, [load])
+
+      const saveRules = React.useCallback(async () => {
+        const text = rulesText.trim()
+        if (text !== '') {
+          let parsed
+          try {
+            parsed = JSON.parse(text)
+          } catch (error) {
+            setNotice({ kind: 'error', text: `${t('rulesInvalid')}：${error?.message ?? error}` })
+            return
+          }
+          if (!Array.isArray(parsed)) {
+            setNotice({ kind: 'error', text: t('rulesNotArray') })
+            return
+          }
+        }
+        setBusy(true)
+        const result = await write('escalationRulesJson', text)
+        setBusy(false)
+        setConfirming(false)
+        if (!result.ok) {
+          setNotice({ kind: 'error', text: `${t('failedSave')}：${result.message ?? ''}` })
+          return
+        }
+        setDirty(false)
+        setNotice({ kind: 'ok', text: t('saved') })
+        void load()
+      }, [rulesText, write, t, load])
+
+      const clearRules = React.useCallback(async () => {
+        setBusy(true)
+        const result = await write('escalationRulesJson', '')
+        setBusy(false)
+        if (!result.ok) {
+          setNotice({ kind: 'error', text: `${t('failedSave')}：${result.message ?? ''}` })
+          return
+        }
+        setRulesText('')
+        setDirty(false)
+        setNotice({ kind: 'ok', text: t('saved') })
+        void load()
+      }, [write, t, load])
+
+      const toggleEnabled = React.useCallback(async (next) => {
+        const result = await write('escalationEnabled', next)
+        if (!result.ok) {
+          setNotice({ kind: 'error', text: `${t('failedSave')}：${result.message ?? ''}` })
+          return
+        }
+        void load()
+      }, [write, load, t])
+
+      const parseRules = text => {
+        try {
+          const parsed = JSON.parse(text === '' ? '[]' : text)
+          return Array.isArray(parsed) ? parsed : []
+        } catch {
+          return []
+        }
+      }
+      const rules = rulesText.trim() !== ''
+        ? parseRules(rulesText)
+        : (Array.isArray(policy?.rules) ? policy.rules : [])
+      const overrideEnabled = fieldOf(snapshot, 'escalationEnabled')
+      const enabled = typeof policy?.enabled === 'boolean'
+        ? policy.enabled
+        : (typeof overrideEnabled === 'boolean' ? overrideEnabled : null)
+      const visible = (entries ?? []).filter(entry => filter === 'all' || entry?.decision === filter)
+      const filters = [
+        ['all', t('auditFilterAll')],
+        ['granted', t('auditFilterGranted')],
+        ['asked', t('auditFilterAsked')],
+      ]
+
+      return h('div', { className: 'sg-page' },
+        h('style', { key: 'css' }, CSS),
+        h('div', { className: 'sg-inner' },
+          h('div', { className: 'sg-head', key: 'head' },
+            h('button', { type: 'button', className: 'sg-back', onClick: close }, '← ' + t('back')),
+            h('div', { className: 'sg-titleblock' },
+              h('h1', { className: 'sg-h1' }, t('auditTitle')),
+              h('p', { className: 'sg-sub' }, t('auditSubtitle')),
+            ),
+          ),
+
+          h('div', { className: 'sg-section', key: 'policy' },
+            h('div', { className: 'sg-bar', style: { borderBottom: 0, paddingBottom: 0 } },
+              h('p', { className: 'sg-h2' }, t('policySection')),
+              h('label', { className: 'sg-toggle', style: { marginLeft: 'auto' } },
+                h('input', {
+                  type: 'checkbox',
+                  checked: enabled === true,
+                  disabled: busy || enabled === null,
+                  onChange: event => { void toggleEnabled(event.target.checked) },
+                }),
+                h('span', null, enabled === true ? t('policyEnabled') : t('policyDisabled')),
+              ),
+              h('button', { type: 'button', className: 'sg-btn', onClick: () => { void load() } }, t('policyRefresh')),
+            ),
+            policy?.source
+              ? h('p', { className: 'sg-muted' }, policy.source === 'panel' ? t('policySourcePanel') : t('policySourceConfig'))
+              : null,
+            h('div', { className: 'sg-card' },
+              rules.length === 0
+                ? h('div', { className: 'sg-row' }, h('span', { className: 'sg-muted' }, t('rulesEmpty')))
+                : rules.map((rule, index) => h('div', { className: 'sg-row', key: `${rule?.id ?? 'rule'}-${index}` },
+                    h('span', { className: 'sg-badge' }, String(rule?.id ?? '?')),
+                    h('span', { className: 'sg-ruleTitle', title: String(rule?.title ?? '') }, String(rule?.title ?? '')),
+                    h('span', { className: 'sg-muted' }, Array.isArray(rule?.tools) ? rule.tools.join(', ') : String(rule?.tools ?? '')),
+                    h('span', { className: 'sg-path', title: ruleMatch(rule) }, ruleMatch(rule)),
+                    h('span', { className: `sg-badge${rule?.maxMode === 'danger-full-access' ? ' warn' : ''}` }, String(rule?.maxMode ?? 'workspace-write')),
+                  )),
+            ),
+            h('textarea', {
+              className: 'sg-input mono sg-codearea',
+              rows: 6,
+              value: rulesText,
+              spellCheck: false,
+              placeholder: RULE_SAMPLE,
+              onChange: event => { setRulesText(event.target.value); setDirty(true) },
+            }),
+            h('div', { className: 'sg-add' },
+              h('button', { type: 'button', className: 'sg-btn primary', disabled: busy, onClick: () => setConfirming(true) }, t('rulesSave')),
+              h('button', { type: 'button', className: 'sg-btn', disabled: busy || rulesText === '', onClick: clearRules }, t('rulesClear')),
+            ),
+            h('p', { className: 'sg-muted' }, t('rulesJsonHint')),
+            notice ? h('p', { className: notice.kind === 'error' ? 'sg-err' : 'sg-muted' }, notice.text) : null,
+          ),
+
+          confirming
+            ? h('div', { className: 'sg-confirm', key: 'confirm' },
+                h('p', { className: 'sg-p' }, t('confirmBody')),
+                h('div', { className: 'sg-add' },
+                  h('button', { type: 'button', className: 'sg-btn primary', disabled: busy, onClick: saveRules }, t('confirmYes')),
+                  h('button', { type: 'button', className: 'sg-btn', onClick: () => setConfirming(false) }, t('confirmNo')),
+                ),
+              )
+            : null,
+
+          h('div', { className: 'sg-section', key: 'audit' },
+            h('div', { className: 'sg-bar', style: { borderBottom: 0, paddingBottom: 0 } },
+              h('p', { className: 'sg-h2' }, t('auditSection')),
+              h('div', { className: 'sg-filters', style: { marginLeft: 'auto' } },
+                filters.map(([value, label]) => h('button', {
+                  key: value,
+                  type: 'button',
+                  className: `sg-btn${filter === value ? ' primary' : ''}`,
+                  onClick: () => setFilter(value),
+                }, label)),
+              ),
+              h('button', { type: 'button', className: 'sg-btn', onClick: () => { void load() } }, t('stateRefresh')),
+            ),
+            h('p', { className: 'sg-muted' }, `${t('auditFile')}：${policy?.auditFile ?? '…'}`),
+            entries === null ? h('p', { className: 'sg-muted' }, t('auditUnavailable')) : null,
+            entries !== null && visible.length === 0 ? h('p', { className: 'sg-muted' }, t('auditEmpty')) : null,
+            entries !== null && visible.length > 0
+              ? h('div', { className: 'sg-card' }, visible.slice().reverse().map((entry, index) => h('div', { className: 'sg-row sg-audit-row', key: `${entry?.at ?? 'entry'}-${index}` },
+                  h('span', { className: 'sg-muted sg-time' }, formatTime(entry?.at)),
+                  h('span', null, String(entry?.tool ?? '')),
+                  h('span', { className: `sg-badge${entry?.mode === 'danger-full-access' ? ' warn' : ''}` }, String(entry?.mode ?? '')),
+                  h('span', { className: 'sg-badge' }, String(entry?.rule ?? '—')),
+                  h('span', { className: `sg-badge ${entry?.decision === 'granted' ? 'ok' : 'warn'}` }, entry?.decision === 'granted' ? t('auditGranted') : t('auditAsked')),
+                  h('span', { className: 'sg-path', title: String(entry?.command || entry?.filePath || '') }, String(entry?.command || entry?.filePath || '—')),
+                  h('span', { className: 'sg-note', title: String(entry?.justification ?? '') }, String(entry?.justification ?? '')),
+                )))
+              : null,
+          ),
+        ),
+      )
+    }
+
     function activeLanguage(ctx) {
       try {
         const active = ctx?.locale?.getLocale?.()?.active
@@ -474,6 +782,57 @@ window.__ModuleLoader__.load({
           }
         }
 
+        const storeRef = { current: null }
+
+        // Settings writes go through the Remote directly: the config-form
+        // controller collapses every failure into `false`, and a revision read
+        // before the panel opened can be stale. Read the authoritative
+        // revision from describe() and retry once on a conflict.
+        const remoteRef = { current: null }
+        ctx.inject(['remote', 'remote.settings'], (child) => {
+          // A dotted injection is required: reading `remote.settings` without
+          // it throws "cannot get property ... without inject".
+          remoteRef.current = child.remote.settings
+          child.effect(() => () => { remoteRef.current = null })
+        })
+
+        async function writeField(field, value) {
+          const settings = remoteRef.current
+          if (settings?.mutate) {
+            const readRevision = async () => {
+              try {
+                const raw = await settings.describe()
+                const view = raw?.ok ? raw.value : raw
+                const list = Array.isArray(view?.namespaces) ? view.namespaces : (Array.isArray(view) ? view : [])
+                const row = list.find(item => item?.ns === 'sandbox-guard')
+                return typeof row?.revision === 'number' ? row.revision : undefined
+              } catch {
+                return storeRef.current?.getSnapshot?.()?.revision
+              }
+            }
+            let revision = await readRevision()
+            let failure = null
+            for (let attempt = 0; attempt < 2; attempt += 1) {
+              try {
+                const result = await settings.mutate('sandbox-guard', [{ op: 'set', path: [field], value }], revision)
+                if (result?.ok) return { ok: true }
+                failure = String(result?.error?.message ?? result?.error?.code ?? 'save failed')
+              } catch (error) {
+                failure = String(error?.message ?? error)
+              }
+              if (attempt === 0 && /revision|conflict/i.test(failure)) {
+                revision = await readRevision()
+                await new Promise(resolve => setTimeout(resolve, 150))
+                continue
+              }
+              break
+            }
+            return { ok: false, message: failure ?? 'save failed' }
+          }
+          const ok = await storeRef.current?.set?.(field, value)
+          return ok === false ? { ok: false, message: 'save failed' } : { ok: true }
+        }
+
         ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
           name: 'sidebar.panellist',
           id: PANEL_ID,
@@ -488,7 +847,6 @@ window.__ModuleLoader__.load({
 
         // `configForms` may be absent in a composition without Settings; the
         // panel then explains the config-file form instead of failing.
-        const storeRef = { current: null }
         ctx.inject(['configForms'], (child) => {
           try {
             if (typeof child.configForms?.get === 'function') storeRef.current = child.configForms.get('sandbox-guard')
@@ -510,6 +868,23 @@ window.__ModuleLoader__.load({
           name: 'main',
           key: PANEL_ID,
         }, () => h(Panel, { t, ctx, close, store: storeRef.current })))
+
+        // Second entry: escalation policy plus the traceable request log. The
+        // glyph is a separate sidebar item so both pages stay one click away.
+        ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
+          name: 'sidebar.panellist',
+          id: AUDIT_ID,
+          order: 32,
+          label: () => t('auditLabel'),
+        }, (props) => {
+          rememberSession(ctx)
+          return h(AuditIcon, props)
+        }))
+
+        ctx.slots.inject('main', () => ctx.slots.register({
+          name: 'main',
+          key: AUDIT_ID,
+        }, () => h(AuditPanel, { t, ctx, close, store: storeRef.current, write: writeField })))
       },
     }
   },

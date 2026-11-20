@@ -1,6 +1,6 @@
 {
   "name": "@inlve/dsh-sandbox-guard",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Windows sandbox governance for DeepSeek Harness: workspace permission pre-flight, sandbox grant coverage repair, trusted writable roots, and a configurable, audited escalation policy",
   "license": "MIT",
   "author": "Inlve",
