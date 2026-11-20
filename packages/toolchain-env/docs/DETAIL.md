@@ -126,6 +126,8 @@ Path = (baseline 去掉上次加的) + wanted        # append
 - 文案按 `ctx.locale.getLocale().active` 选 zh/en 字典（写在 client.js 里）。
 - 自动发现是唯一需要会话的部分：它执行 `/toolchain scan --json`。拿不到会话时整块隐藏，
   清单编辑、保存、位置/自动发现开关全部照常工作。
+
+写入不经过 `ConfigFormController.set`（它把失败折叠成 `false`，还会在快照过期时静默失手）：面板直接调 `remote.settings.mutate`，写前用 `settings.describe()` 取权威 revision，冲突时重读重试一次，失败原因显示在状态行。`describe()` 的形状是 `{ ok, value: { namespaces, writable, hasDocument } }`，revision 在 `namespaces[i].revision`。Host 侧另有 `save_entries` 动作走同一个 `settings` 服务，供 CLI/诊断使用。
 - 页面用 `color-mix()` 继承主题前景色，只有主按钮是固定的 VSCode 蓝 `#0e639c`；路径一律等宽字体。
 
 ## 被否决的入口

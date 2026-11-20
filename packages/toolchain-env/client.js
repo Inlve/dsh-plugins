@@ -387,7 +387,7 @@ window.__ModuleLoader__.load({
 
     // ------------------------------------------------------------------- panel
 
-    function Panel({ t, ctx, close, store }) {
+    function Panel({ t, ctx, close, store, write }) {
       const boot = store && typeof store.getSnapshot === 'function' ? store.getSnapshot() : undefined
       const [snapshot, setSnapshot] = React.useState(boot)
       const [rows, setRows] = React.useState(() => parseEntries(textOf(boot)))
@@ -423,7 +423,7 @@ window.__ModuleLoader__.load({
 
       const served = Boolean(store)
       const writable = served && snapshot?.writable !== false
-      const canSave = writable && typeof store?.set === 'function'
+      const canSave = writable
 
       const autoScanValue = fieldOf(snapshot, 'toolchainAutoScan')
       const positionValue = fieldOf(snapshot, 'toolchainPosition')
@@ -489,9 +489,9 @@ window.__ModuleLoader__.load({
         setBusy(true)
         setMessage(null)
         try {
-          const ok = await store.set('toolchainEntries', serializeEntries(rows))
-          if (ok === false) {
-            setMessage({ kind: 'error', text: t('failedSave') })
+          const result = await write('toolchainEntries', serializeEntries(rows))
+          if (!result.ok) {
+            setMessage({ kind: 'error', text: result.message ? `${t('failedSave')}：${result.message}` : t('failedSave') })
           } else {
             setDirty(false)
             setMessage({ kind: 'ok', text: t('saved') })
@@ -510,10 +510,10 @@ window.__ModuleLoader__.load({
         setPrefs(current => ({ ...current, [field]: value }))
         setBusy(true)
         try {
-          const ok = await store.set(field, value)
-          if (ok === false) {
+          const result = await write(field, value)
+          if (!result.ok) {
             setPrefs(current => ({ ...current, [field]: previous }))
-            setMessage({ kind: 'error', text: t('failedSave') })
+            setMessage({ kind: 'error', text: result.message ? `${t('failedSave')}：${result.message}` : t('failedSave') })
           } else {
             setMessage({ kind: 'ok', text: t('saved') })
             void loadApplied()
@@ -853,6 +853,64 @@ window.__ModuleLoader__.load({
           }
         }
 
+        const storeRef = { current: null }
+
+        // Settings writes go through the Remote directly: the config-form
+        // controller collapses every failure into `false`, and a revision that
+        // went stale while the panel stayed open arrives as a conflict.
+        // Retrying once with the fresh revision fixes that, and anything else
+        // keeps its message so the panel can show why the save was refused.
+        const remoteRef = { current: null }
+        ctx.inject(['remote', 'remote.settings'], (child) => {
+          // A dotted injection is required: reading `remote.settings` without
+          // it throws "cannot get property ... without inject".
+          remoteRef.current = child.remote.settings
+          child.effect(() => () => { remoteRef.current = null })
+        })
+
+        async function writeSetting(field, value) {
+          const settings = remoteRef.current
+          if (settings?.mutate) {
+            // The mirror behind configForms can lag a write made elsewhere, and
+            // the Host refuses a stale revision. Read the authoritative
+            // revision from `describe()` right before writing.
+            const readRevision = async () => {
+              try {
+                const raw = await settings.describe()
+                const view = raw?.ok ? raw.value : raw
+                const list = Array.isArray(view?.namespaces)
+                  ? view.namespaces
+                  : (Array.isArray(view) ? view : [])
+                const row = list.find(item => item?.ns === 'toolchain-env')
+                return typeof row?.revision === 'number' ? row.revision : undefined
+              } catch {
+                return storeRef.current?.getSnapshot?.()?.revision
+              }
+            }
+
+            let revision = await readRevision()
+            let failure = null
+            for (let attempt = 0; attempt < 2; attempt += 1) {
+              try {
+                const result = await settings.mutate('toolchain-env', [{ op: 'set', path: [field], value }], revision)
+                if (result?.ok) return { ok: true }
+                failure = String(result?.error?.message ?? result?.error?.code ?? 'save failed')
+              } catch (error) {
+                failure = String(error?.message ?? error)
+              }
+              if (attempt === 0 && /revision|conflict/i.test(failure)) {
+                revision = await readRevision()
+                await new Promise(resolve => setTimeout(resolve, 150))
+                continue
+              }
+              break
+            }
+            return { ok: false, message: failure ?? 'save failed' }
+          }
+          const ok = await storeRef.current?.set?.(field, value)
+          return ok === false ? { ok: false, message: 'save failed' } : { ok: true }
+        }
+
         ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({
           name: 'sidebar.panellist',
           id: PANEL_ID,
@@ -868,7 +926,6 @@ window.__ModuleLoader__.load({
         // `configForms` may be absent in a composition without Settings; the
         // page then explains the config-file form instead of failing. The entry
         // id is the one in cordis.patch.yml.
-        const storeRef = { current: null }
         ctx.inject(['configForms'], (child) => {
           try {
             if (typeof child.configForms?.get === 'function') storeRef.current = child.configForms.get('toolchain-env')
@@ -889,7 +946,7 @@ window.__ModuleLoader__.load({
         ctx.slots.inject('main', () => ctx.slots.register({
           name: 'main',
           key: PANEL_ID,
-        }, () => h(Panel, { t, ctx, close, store: storeRef.current })))
+        }, () => h(Panel, { t, ctx, close, write: writeSetting, store: storeRef.current })))
       },
     }
   },

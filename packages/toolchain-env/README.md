@@ -84,7 +84,7 @@ toolchainEntries: |
 
 ## 工具与命令
 
-`toolchain_env`：`status`、`which <命令>`、`verify [命令]`、`scan [versions]`、`list`、`refresh`、`audit [条数]`。
+`toolchain_env`：`status`、`which <命令>`、`verify [命令]`、`scan [versions]`、`list`、`refresh`、`audit [条数]`、`save_entries <文本>`。
 
 `/toolchain [status|list|scan|refresh|verify|audit|which <命令>] [--json] [--versions]`
 
@@ -92,6 +92,11 @@ toolchainEntries: |
   加 `versions`/`--versions` 才对每个已安装目录的首个可执行文件跑一次 `--version`（每个 3 秒超时，只跑 `.exe`）。
 - `list`：当前**有效清单**——配置了什么、展开成什么、缺什么（`configured` / `wanted` / `missing` / `unresolved`）。
 - `--json`：`scan`、`list` 输出的机器可读形式；面板就是靠它取数。
+- `save_entries`：把面板清单写进 volatile 配置（`settings` 服务，无需会话）；不给文本时只报告哪些配置项可写——诊断与 CLI 通道。
+
+### 面板保存
+
+保存直接调 `settings.mutate('toolchain-env', …)`，写前用 `settings.describe()` 读**权威 revision**（浏览器侧的 settings mirror 可能过期），冲突时重读再重试一次；失败会把真实错误显示在状态行，而不是只写「保存失败」。
 
 ## 生效范围
 

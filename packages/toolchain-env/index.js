@@ -1005,8 +1005,12 @@ export function apply(ctx, rawConfig = {}) {
       properties: {
         action: {
           type: 'string',
-          enum: ['status', 'which', 'verify', 'refresh', 'audit', 'scan', 'list'],
-          description: 'status = what is applied and why; which = resolve one command; verify = real pwsh probe; scan = browse discoverable toolchains; list = the effective list; refresh = recompose now; audit = recent PATH changes.',
+          enum: ['status', 'which', 'verify', 'refresh', 'audit', 'scan', 'list', 'save_entries'],
+          description: 'status = what is applied and why; which = resolve one command; verify = real pwsh probe; scan = browse discoverable toolchains; list = the effective list; refresh = recompose now; audit = recent PATH changes; save_entries = persist the panel list through the settings service (diagnostic/CLI path).',
+        },
+        value: {
+          type: 'string',
+          description: 'save_entries only: the multi-line "id | path | note" list to persist. Omit to only report which config entries the settings service currently serves.',
         },
         command: {
           type: 'string',
@@ -1038,6 +1042,24 @@ export function apply(ctx, rawConfig = {}) {
     async execute(args, exec) {
       try {
         const action = String(args?.action ?? 'status')
+        if (action === 'save_entries') {
+          const settings = ctx.get?.('settings')
+          if (!settings) return { ok: false, action, error: { code: 'no-settings', message: 'the settings service is not mounted' } }
+          let namespaces = []
+          try {
+            namespaces = settings.describe().map(row => ({ ns: row.ns, autoGenerate: row.autoGenerate, revision: row.revision, hasUser: row.user !== undefined, hasBase: row.base !== undefined }))
+          } catch (error) {
+            return { ok: false, action, error: { code: 'describe-failed', message: String(error?.message ?? error) } }
+          }
+          const value = typeof args?.value === 'string' ? args.value : ''
+          if (value === '') return { ok: true, action, saved: false, namespaces }
+          try {
+            await settings.mutate('toolchain-env', [{ op: 'set', path: ['toolchainEntries'], value }])
+            return { ok: true, action, saved: true, namespaces }
+          } catch (error) {
+            return { ok: false, action, saved: false, namespaces, error: { code: error?.code ?? 'save-failed', message: String(error?.message ?? error) } }
+          }
+        }
         if (action === 'status') return statusPayload(exec, args?.path)
         if (action === 'which') return whichPayload(args?.command)
         if (action === 'verify') return await verifyPayload(args?.command)
