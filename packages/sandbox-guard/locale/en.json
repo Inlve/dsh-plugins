@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Sandbox guard",
+    "description": "Windows sandbox governance for DSH: workspace permission pre-flight, grant coverage repair, trusted writable roots such as package caches, and a configurable escalation policy, with every grant audited.",
+    "detail": "docs/DETAIL.md"
+  }
+}

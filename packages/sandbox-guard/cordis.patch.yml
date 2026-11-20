@@ -1,0 +1,36 @@
+- insert:
+    - id: sandbox-guard
+      name: '@inlve/dsh-sandbox-guard'
+      config:
+        # Workspace pre-flight (Windows file permissions the sandbox needs).
+        autoRepair: true
+        checkOnSessionStart: true
+        scanOnActivate: true
+        # Directories kept writable for confined commands (package caches and
+        # similar). Each grant copies the workspace capability ACE and the Low
+        # integrity label, so any low-integrity process of this user may write
+        # it — not only DSH. Risky paths need acknowledgeRisk: true.
+        trust:
+          roots: []
+          autoGrantOnSessionStart: true
+        # Panel-managed list: one "path | note" per line, %VAR% expanded, a
+        # trailing " !ack" acknowledges a risky path. Edited from the sidebar
+        # panel; granted for each registered workspace on the next command or
+        # session, without a restart.
+        trustRoots: ''
+        trustAutoGrant: true
+        # Escalation policy: these two operations leave the workspace without
+        # asking, and every grant is recorded with the agent's reason.
+        escalation:
+          enabled: true
+          rules:
+            - id: cargo-fetch
+              title: cargo 拉取依赖（需要联网）
+              tools: [pwsh, bash]
+              commandPattern: '^cargo\s+fetch(\s+[^\s]+)*$'
+              maxMode: danger-full-access
+            - id: npm-ci-noscripts
+              title: npm 安装依赖但不跑生命周期脚本
+              tools: [pwsh, bash]
+              commandPattern: '^npm\s+ci\s+--ignore-scripts(\s+[^\s]+)*$'
+              maxMode: danger-full-access

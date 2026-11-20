@@ -1,0 +1,65 @@
+{
+  "name": "@inlve/dsh-sandbox-guard",
+  "version": "1.4.1",
+  "description": "Windows sandbox governance for DeepSeek Harness: workspace permission pre-flight, sandbox grant coverage repair, trusted writable roots, and a configurable, audited escalation policy",
+  "license": "MIT",
+  "author": "Inlve",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Inlve/dsh-plugins.git",
+    "directory": "packages/sandbox-guard"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "windows",
+    "acl",
+    "sandbox",
+    "trust",
+    "writable-roots",
+    "escalation",
+    "approval",
+    "audit",
+    "workspace"
+  ],
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "lib",
+    "cordis.patch.yml",
+    "scripts",
+    "locale",
+    "docs",
+    "icon.svg",
+    "README.md"
+  ],
+  "engines": {
+    "dsh": ">=0.2.0"
+  },
+  "scripts": {
+    "check": "node --check index.js && node --check client.js && node --check lib/policy.js && node --check lib/audit.js && node --check lib/trust.js",
+    "test": "node --test --test-isolation=none test/basic.test.mjs test/policy.test.mjs test/trust.test.mjs"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/schemastery": "^3.18.5"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": ["@deepseek-ai/dsh-client-ui-sidebar"]
+    }
+  }
+}

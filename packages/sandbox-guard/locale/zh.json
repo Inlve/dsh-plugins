@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "沙箱守卫",
+    "description": "DSH 的 Windows 沙箱治理：工作区权限前置检查、授权覆盖修复、受信任的可写目录（缓存等），以及可配置的提权策略；每次授权都留可追溯记录。",
+    "detail": "docs/DETAIL.md"
+  }
+}
