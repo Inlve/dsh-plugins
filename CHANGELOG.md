@@ -2,6 +2,16 @@
 
 All notable changes to this repository are documented here.
 
+## [0.1.0] - 2026-11-20
+
+### Added
+
+- `@inlve/dsh-mcp-panel`：左侧栏 MCP 面板。服务器清单来自 mcp-manager 的
+  `servers`（可增删改、停用、重启），实时状态走 `mcpManager.watch`，状态点绿/红
+  并附失败原因，点击状态点执行一次 `mcpManager.probe`；配置行与插件注册的服务器
+  只读展示加载阶段。保存通过 Settings Remote 写 profile 的 `mcp-manager` 行，
+  即时协调、无需重启。
+
 ## [0.3.1] - 2026-11-03
 
 ### Fixed

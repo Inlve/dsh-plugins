@@ -1,0 +1,8 @@
+# The MCP panel bundle: one Host row so the Loader owns the package, and the
+# browser half reaches the same row by the bare package name. The page itself
+# talks to the Host through the `settings`, `mcpManager` and `pluginInventory`
+# Remotes, so the Host half has nothing to configure.
+- insert:
+    - id: mcp-panel
+      name: '@inlve/dsh-mcp-panel'
+      config: {}

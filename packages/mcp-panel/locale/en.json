@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "MCP servers",
+    "description": "Manage DSH's MCP servers from one sidebar page: add, edit, disable and delete them, read a green/red status dot with a short failure reason, click the dot to probe again, and restart a server stuck in reconnects.",
+    "detail": "docs/DETAIL.md"
+  }
+}
